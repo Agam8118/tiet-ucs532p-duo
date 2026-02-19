@@ -16,7 +16,7 @@ title: Metal Surface Defect Detection
 
 ---
 
-## 🚀 Project Highlights
+##  Project Highlights
 
 - 🧠 Domain-independent modular architecture  
 - ⚙️ Classical feature engineering (LBP + Gabor + Shape + Statistics)  
@@ -26,7 +26,7 @@ title: Metal Surface Defect Detection
 
 ---
 
-## 🏭 Industrial Motivation
+##  Industrial Motivation
 
 Manual inspection in MSMEs often results in:
 
@@ -39,7 +39,7 @@ This system provides a scalable, interpretable, and efficient inspection framewo
 
 ---
 
-## 🔍 System Pipeline
+##  System Pipeline
 
 | Stage | Description |
 |-------|------------|
@@ -51,10 +51,14 @@ This system provides a scalable, interpretable, and efficient inspection framewo
 
 ---
 
-## 📊 Why Classical ML?
+##  Why Classical ML?
 
 - Small dataset suitability  
 - Interpretable decisions  
 - No GPU requirement  
 - Industrial cost-effectiveness  
 
+
+---
+
+© 2026 Agampreet Singh | Classical Computer Vision Research Project
