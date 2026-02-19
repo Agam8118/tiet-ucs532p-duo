@@ -2,67 +2,59 @@
 layout: default
 title: Metal Surface Defect Detection
 ---
-[🔗 View Source Code on GitHub](https://github.com/Agam8118/tiet-ucs532p-duo)
 
+<div style="text-align:center; padding:40px 0;">
+  <h1 style="font-size:2.5em;">A Unified Classical Computer Vision Framework</h1>
+  <h2 style="font-weight:400;">Industrial Surface Defect Detection using Classical ML</h2>
+  <br>
+  <a href="https://github.com/YOUR_USERNAME/metal-surface-defect-detection" 
+     style="background:#2a7ae2; color:white; padding:12px 24px; 
+     text-decoration:none; border-radius:6px;">
+     🔗 View Source Code
+  </a>
+</div>
 
-# A Unified Classical Computer Vision Framework for Surface Defect Detection
+---
 
-## 📌 Project Overview
+## 🚀 Project Highlights
 
-This project presents a **domain-independent classical computer vision pipeline** for detecting surface defects in industrial metal components using interpretable machine learning techniques.
-
-Designed specifically for MSME manufacturing environments, the system ensures:
-
-- Low computational cost
-- Real-time processing
-- CPU-based deployment
-- Explainable ML decisions
+- 🧠 Domain-independent modular architecture  
+- ⚙️ Classical feature engineering (LBP + Gabor + Shape + Statistics)  
+- 📉 PCA + LDA dimensionality reduction  
+- 🌲 Random Forest & Nearest Centroid classifiers  
+- ⚡ Real-time CPU-based inference  
 
 ---
 
 ## 🏭 Industrial Motivation
 
-Manual inspection in small and medium-scale industries leads to:
+Manual inspection in MSMEs often results in:
 
-- Human fatigue over long shifts
-- Inconsistent defect detection
-- Increased production rejections
-- High operational costs
+- Human fatigue  
+- Inconsistent quality control  
+- Increased rejection rates  
+- Higher operational cost  
 
-This framework provides an automated, reliable, and scalable inspection solution.
-
----
-
-## 🧠 Core Technical Contributions
-
-✔ Modular domain-independent architecture  
-✔ Texture-based feature engineering (LBP + Gabor)  
-✔ PCA + LDA dimensionality reduction  
-✔ Lightweight classical ML classifiers  
-✔ Real-time production feasibility  
+This system provides a scalable, interpretable, and efficient inspection framework.
 
 ---
 
-## 🔍 Pipeline Overview
+## 🔍 System Pipeline
 
-1. Image Acquisition  
-2. Preprocessing  
-3. Defect Segmentation  
-4. Feature Extraction  
-5. Machine Learning Classification  
-
-For detailed technical explanation, visit:
-
-- [System Architecture](architecture.html)
-- [Methodology](methodology.html)
-- [Results](results.html)
+| Stage | Description |
+|-------|------------|
+| Image Acquisition | High-resolution capture under controlled lighting |
+| Preprocessing | Gaussian + CLAHE + Bilateral filtering |
+| Segmentation | Otsu thresholding + Morphological operations |
+| Feature Extraction | LBP, Gabor, Shape, Statistical descriptors |
+| Classification | PCA + LDA + Random Forest |
 
 ---
 
-## 📊 Why Classical ML Instead of Deep Learning?
+## 📊 Why Classical ML?
 
-- Small labeled datasets (100–500 samples/class)
-- Interpretability requirements in industry
-- Lower hardware dependency (no GPU required)
-- Reduced overfitting risk
+- Small dataset suitability  
+- Interpretable decisions  
+- No GPU requirement  
+- Industrial cost-effectiveness  
 
