@@ -1,6 +1,6 @@
 ---
 layout: default
-title: System Architecture
+title: Architecture
 ---
 
 # System Architecture
