@@ -1,6 +1,8 @@
 ---
 layout: default
 title: Metal Surface Defect Detection
+[🔗 View Source Code on GitHub](https://github.com/YOUR_USERNAME/metal-surface-defect-detection)
+
 ---
 
 # A Unified Classical Computer Vision Framework for Surface Defect Detection
