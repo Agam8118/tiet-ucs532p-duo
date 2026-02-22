@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — Metal Surface Defect Detection</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">
+    <div class="nav-logo">CV</div>
+    <span class="nav-title">MSDD · Pixel Duo</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Overview</a></li>
+    <li><a href="architecture.html" class="active">Architecture</a></li>
+    <li><a href="methodology.html">Methodology</a></li>
+    <li><a href="results.html">Results</a></li>
+    <li><a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="hero fade-in" style="padding-bottom: 40px;">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-line"></span>
+      <span>System Architecture</span>
+    </div>
+    <h1>Modular Pipeline<br><em>Architecture</em></h1>
+    <p class="hero-sub">Domain-independent core with domain-specific model selection — the same preprocessing and feature extraction serves metal surfaces.</p>
+  </div>
+
+  <!-- DESIGN PRINCIPLES -->
+  <div class="section fade-in fade-in-1">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Design Principles</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="callout">
+      <strong>Key insight:</strong> Preprocessing and feature extraction are kept <strong>domain-independent</strong>. Only the final ML classifier is swapped per domain. This makes the framework extensible to new surfaces without redesigning the full pipeline.
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Modularity</div>
+        <div class="card-body">Each stage is a self-contained module with a defined input/output contract. Stages can be swapped or tuned independently without breaking the pipeline.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Interpretability-First</div>
+        <div class="card-body">Every decision can be traced back to specific feature values. No black-box layers — suitable for certified quality control environments.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">CPU-Native</div>
+        <div class="card-body">No GPU dependencies. All operations — from Gabor filtering to Random Forest inference — run on standard multi-core CPUs available in factory settings.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Low-Data Regime</div>
+        <div class="card-body">Architecture is designed for 100–500 samples per class, not thousands. PCA dimensionality reduction actively prevents overfitting on small datasets.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL PIPELINE -->
+  <div class="section fade-in fade-in-2">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Full Pipeline Architecture</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="arch-flow">
+
+      <div class="arch-node">
+        <div class="arch-step">
+          <span class="arch-step-num">S1</span>
+          <span class="arch-step-arrow">↓</span>
+        </div>
+        <div class="arch-content">
+          <div class="arch-name">Image Acquisition</div>
+          <div class="arch-detail">Capture high-resolution surface images (≥2048×2048 px) under controlled 45° incident LED lighting to minimize specular reflection. Images sourced from the NEU Metal Surface Defect Dataset — 6 defect classes × 300 images each = 1800 total samples.</div>
+          <div class="arch-chips">
+            <span class="chip">NEU Dataset</span>
+            <span class="chip">2048×2048 px</span>
+            <span class="chip">45° LED lighting</span>
+            <span class="chip">Grayscale</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-node">
+        <div class="arch-step">
+          <span class="arch-step-num">S2</span>
+          <span class="arch-step-arrow">↓</span>
+        </div>
+        <div class="arch-content">
+          <div class="arch-name">Preprocessing</div>
+          <div class="arch-detail">Sequential noise reduction and contrast normalization pipeline. Gaussian blur removes high-frequency sensor noise. CLAHE (Contrast Limited Adaptive Histogram Equalization) enhances local contrast in defect regions. Bilateral filtering preserves edge sharpness while smoothing homogeneous surface regions. Final intensity normalization to [0,1].</div>
+          <div class="arch-chips">
+            <span class="chip">Gaussian Blur</span>
+            <span class="chip">CLAHE</span>
+            <span class="chip">Bilateral Filter</span>
+            <span class="chip">Normalization [0,1]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-node">
+        <div class="arch-step">
+          <span class="arch-step-num">S3</span>
+          <span class="arch-step-arrow">↓</span>
+        </div>
+        <div class="arch-content">
+          <div class="arch-name">Defect Segmentation</div>
+          <div class="arch-detail">Otsu's global thresholding adaptively determines an optimal binarization threshold from the image histogram. Morphological opening removes small noise blobs; closing fills gaps within defect regions. Connected component analysis labels distinct candidate regions. Size filtering (minimum 50 px²) eliminates sensor artifacts.</div>
+          <div class="arch-chips">
+            <span class="chip">Otsu Thresholding</span>
+            <span class="chip">Morphological Open/Close</span>
+            <span class="chip">Connected Components</span>
+            <span class="chip">Size Filter ≥50px²</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-node">
+        <div class="arch-step">
+          <span class="arch-step-num">S4</span>
+          <span class="arch-step-arrow">↓</span>
+        </div>
+        <div class="arch-content">
+          <div class="arch-name">Feature Extraction</div>
+          <div class="arch-detail">Multi-modal feature extraction capturing complementary surface properties. LBP captures rotation-invariant micro-texture. Gabor filter bank extracts directional texture at multiple scales and orientations. GLCM computes second-order texture statistics. Shape descriptors characterize defect geometry. Statistical moments (mean, variance, skewness, kurtosis) describe intensity distributions.</div>
+          <div class="arch-chips">
+            <span class="chip">LBP Texture</span>
+            <span class="chip">Gabor 4×3 Bank</span>
+            <span class="chip">HOG Gradients</span>
+            <span class="chip">GLCM</span>
+            <span class="chip">Shape Descriptors</span>
+            <span class="chip">Statistical Moments</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-node">
+        <div class="arch-step">
+          <span class="arch-step-num">S5</span>
+          <span class="arch-step-arrow">↓</span>
+        </div>
+        <div class="arch-content">
+          <div class="arch-name">Dimensionality Reduction</div>
+          <div class="arch-detail">PCA reduces the raw 100+ dimensional feature vector to the 20–30 most discriminative principal components, retaining ≥95% of total variance. This eliminates correlated redundancy between features, accelerates downstream classification, and significantly reduces overfitting risk on small datasets. LDA further projects features to maximize between-class separation.</div>
+          <div class="arch-chips">
+            <span class="chip">PCA → 20–30 components</span>
+            <span class="chip">≥95% variance retained</span>
+            <span class="chip">LDA projection</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-node">
+        <div class="arch-step">
+          <span class="arch-step-num">S6</span>
+        </div>
+        <div class="arch-content">
+          <div class="arch-name">ML Classification</div>
+          <div class="arch-detail">Domain-specific classifier is selected based on target material. For metal surfaces: LDA + Nearest Centroid classifier provides fast, interpretable decisions; Random Forest provides non-linear boundaries and feature importance rankings; SVM with RBF kernel serves as a strong baseline. Final output includes defect class label and confidence score.</div>
+          <div class="arch-chips">
+            <span class="chip">LDA + Nearest Centroid</span>
+            <span class="chip">Random Forest</span>
+            <span class="chip">SVM-RBF</span>
+            <span class="chip">Confidence Score</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DATA FLOW -->
+  <div class="section fade-in fade-in-3">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Data Flow Specifications</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Input Format</div>
+        <div class="pipe-desc">Single-channel grayscale image, 200×200 px (resized from original). Pixel values: uint8 [0, 255].</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">After Preprocess</div>
+        <div class="pipe-desc">Float32 image, same spatial dimensions. Pixel values normalized to [0.0, 1.0].</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">After Feature Ext.</div>
+        <div class="pipe-desc">1D feature vector of ~120 dimensions: LBP histogram (59D) + Gabor responses (12D) + HOG descriptor (N) + GLCM stats (5D) + shape features (7D) + statistical moments (4D).</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">After PCA</div>
+        <div class="pipe-desc">Reduced vector of 20–30 float components, zero-mean, unit-variance in PCA space.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Output</div>
+        <div class="pipe-desc">Integer class label ∈ {0…5} mapping to defect category + float confidence ∈ [0,1] for the predicted class.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODEL SELECTION -->
+  <div class="section fade-in fade-in-4">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Classifier Comparison</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">LDA + Nearest Centroid</div>
+        <div class="card-body">Primary production model. Computes class centroids in LDA-transformed space and assigns test samples by Euclidean distance. Extremely fast (&lt;5ms), fully interpretable, no hyperparameters to tune.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Random Forest</div>
+        <div class="card-body">Ensemble of 200 decision trees providing non-linear decision boundaries. Built-in feature importance ranking reveals which descriptors (LBP vs. Gabor vs. shape) contribute most to each defect class.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">SVM (RBF Kernel)</div>
+        <div class="card-body">Strong statistical baseline for high-dimensional feature spaces. RBF kernel handles non-linear class boundaries. Tuned via grid search over C and γ with 5-fold cross-validation.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">k-NN (k=5)</div>
+        <div class="card-body">Simplest baseline. Classifies by majority vote among 5 nearest neighbors in PCA space. Useful for anomaly detection and understanding the feature space structure.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-left">
+    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
+  </div>
+  <div class="footer-right">
+    <a href="index.html">Overview</a>
+    <a href="methodology.html">Methodology</a>
+    <a href="results.html">Results</a>
+  </div>
+</footer>
+
+</body>
+</html>

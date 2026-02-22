@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metal Surface Defect Detection — Pixel Duo</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">
+    <div class="nav-logo">CV</div>
+    <span class="nav-title">MSDD · Pixel Duo</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="methodology.html">Methodology</a></li>
+    <li><a href="results.html">Results</a></li>
+    <li><a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- HERO -->
+  <div class="hero fade-in">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-line"></span>
+      <span class="eyebrow-dot"></span>
+      <span>UCS532P · Computer Vision · TIET</span>
+    </div>
+    <h1>Metal Surface<br><em>Defect Detection</em></h1>
+    <p class="hero-sub">A Unified Classical Computer Vision Framework for Industrial Surface Inspection</p>
+    <div class="hero-tags">
+      <span class="tag amber">Classical CV Only</span>
+      <span class="tag amber">No Deep Learning</span>
+      <span class="tag steel">LBP · Gabor · HOG · GLCM</span>
+      <span class="tag steel">SVM · Random Forest · LDA</span>
+      <span class="tag green">CPU Inference</span>
+      <span class="tag">NEU Dataset</span>
+    </div>
+    <div class="hero-actions">
+      <a href="architecture.html" class="btn btn-primary">View Architecture →</a>
+      <a href="https://github.com/Agam8118/tiet-ucs532p-duo" class="btn btn-ghost" target="_blank">↗ Source Code</a>
+      <a href="results.html" class="btn btn-ghost">Results</a>
+    </div>
+  </div>
+
+  <!-- STAT ROW -->
+  <div class="stat-row fade-in fade-in-1">
+    <div class="stat">
+      <div class="stat-val">6</div>
+      <div class="stat-label">Defect Classes</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">1800</div>
+      <div class="stat-label">Training Images</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">5</div>
+      <div class="stat-label">Pipeline Stages</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">0</div>
+      <div class="stat-label">GPU Required</div>
+    </div>
+  </div>
+
+  <!-- MOTIVATION -->
+  <div class="section fade-in fade-in-2">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Industrial Motivation</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="callout">
+      <strong>Context:</strong> MSMEs across Punjab — in auto parts manufacturing hubs like Ludhiana and textile centres — continue to rely heavily on <strong>manual visual inspection</strong>, leading to high defect escape rates, fatigue-driven inconsistency, and costly late-stage rejections.
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <span class="card-icon">😴</span>
+        <div class="card-title">Human Fatigue</div>
+        <div class="card-body">Inspectors experience sharply decreased accuracy over long production shifts, causing systematic missed detections that compound over time.</div>
+      </div>
+      <div class="card">
+        <span class="card-icon">⚖️</span>
+        <div class="card-title">Inconsistent Detection</div>
+        <div class="card-body">Subjective judgments vary between individual inspectors and across different shifts, making quality control non-reproducible.</div>
+      </div>
+      <div class="card">
+        <span class="card-icon">💸</span>
+        <div class="card-title">Late-stage Rejections</div>
+        <div class="card-body">Defects discovered at assembly or shipping stages cause expensive rework, material waste, and customer dissatisfaction.</div>
+      </div>
+      <div class="card">
+        <span class="card-icon">🏭</span>
+        <div class="card-title">MSME Constraints</div>
+        <div class="card-body">Small manufacturers cannot afford GPU hardware or deep learning infrastructure — they need classical, CPU-deployable solutions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARGET DEFECTS -->
+  <div class="section fade-in fade-in-3">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Target Defect Classes</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-num">01</div>
+        <div class="pipe-stage">Scratches</div>
+        <div class="pipe-desc">Linear surface abrasions caused by contact with abrasive materials during handling or machining. Appear as elongated bright streaks in grayscale imagery.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">02</div>
+        <div class="pipe-stage">Rolled-in Scale</div>
+        <div class="pipe-desc">Oxide scale pressed into the metal surface during hot rolling, visible as irregular dark patches with distinct texture contrast against base metal.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">03</div>
+        <div class="pipe-stage">Pitting</div>
+        <div class="pipe-desc">Small localized depressions or cavities on the surface caused by corrosion or mechanical impacts. Detected via circular shape descriptors and intensity dips.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">04</div>
+        <div class="pipe-stage">Inclusion</div>
+        <div class="pipe-desc">Non-metallic foreign particles embedded in the steel matrix, appearing as irregular dark regions with high local texture contrast.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">05</div>
+        <div class="pipe-stage">Patches</div>
+        <div class="pipe-desc">Irregularly shaped surface regions with different reflectivity from the surrounding base metal, often caused by uneven cooling or coating defects.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">06</div>
+        <div class="pipe-stage">Crazing</div>
+        <div class="pipe-desc">Network of fine surface cracks forming a craze pattern. Distinguished from scratches by their branching, non-linear morphology and dense clustering.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYSTEM PIPELINE -->
+  <div class="section fade-in fade-in-4">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">System Pipeline Overview</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-num">S1</div>
+        <div class="pipe-stage">Image Acquisition</div>
+        <div class="pipe-desc">High-res capture at ≥2048×2048px under controlled 45° LED lighting to minimize specular reflection. Source: <code>NEU Metal Surface Dataset</code> (6 classes × 300 images).</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">S2</div>
+        <div class="pipe-stage">Preprocessing</div>
+        <div class="pipe-desc"><code>Gaussian blur</code> → <code>CLAHE</code> contrast enhancement → <code>Bilateral filter</code> (edge-preserving) → intensity normalization to [0,1].</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">S3</div>
+        <div class="pipe-stage">Segmentation</div>
+        <div class="pipe-desc"><code>Otsu thresholding</code> + morphological <code>opening/closing</code> → <code>connected component analysis</code> filtering regions &lt;50px².</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">S4</div>
+        <div class="pipe-stage">Feature Extraction</div>
+        <div class="pipe-desc"><code>LBP</code> texture histograms + <code>Gabor</code> filter bank (4 orientations, 3 scales) + <code>GLCM</code> + shape descriptors + statistical moments → <code>PCA</code> to 20–30 components.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">S5</div>
+        <div class="pipe-stage">Classification</div>
+        <div class="pipe-desc"><code>LDA</code> + Nearest Centroid (primary), <code>Random Forest</code>, <code>SVM-RBF</code> ensemble — outputs class label + confidence score.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; text-align:right;">
+      <a href="architecture.html" class="btn btn-ghost" style="display:inline-flex;">Full architecture detail →</a>
+    </div>
+  </div>
+
+  <!-- WHY CLASSICAL -->
+  <div class="section fade-in fade-in-5">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Why Classical ML — Not Deep Learning</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-item">
+        <div class="feat-label">Small Dataset Suitability</div>
+        <div class="feat-desc">MSMEs typically have 100–500 labeled samples per defect class. Classical models generalize well without requiring thousands of annotated images.</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">Interpretability</div>
+        <div class="feat-desc">Quality assurance teams need to understand why a part was rejected. Feature importance rankings and LDA projections provide transparent explanations.</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">Hardware Independence</div>
+        <div class="feat-desc">Entire inference pipeline runs on standard CPU hardware. No GPU, no CUDA, no cloud dependency — deployable on any inspection station.</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">Fast Inference</div>
+        <div class="feat-desc">Classical feature extraction + nearest centroid classification achieves sub-100ms inference per image — suitable for production line integration.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="section fade-in fade-in-6">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title">Team & Course</span>
+      <span class="section-divider"></span>
+    </div>
+    <div class="card-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="card">
+        <div class="card-title">Agampreet Singh</div>
+        <div class="card-body" style="font-family: var(--mono); font-size: 12px; color: var(--muted);">102323003</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Vansh Chambyal</div>
+        <div class="card-body" style="font-family: var(--mono); font-size: 12px; color: var(--muted);">102323005</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dr. Raghav B. Venkataramaiyer</div>
+        <div class="card-body" style="font-family: var(--mono); font-size: 12px; color: var(--muted);">Instructor · UCS532P</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-left">
+    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
+  </div>
+  <div class="footer-right">
+    <a href="architecture.html">Architecture</a>
+    <a href="methodology.html">Methodology</a>
+    <a href="results.html">Results</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology — Metal Surface Defect Detection</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">
+    <div class="nav-logo">CV</div>
+    <span class="nav-title">MSDD · Pixel Duo</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="methodology.html" class="active">Methodology</a></li>
+    <li><a href="results.html">Results</a></li>
+    <li><a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="hero fade-in" style="padding-bottom: 40px;">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-line"></span>
+      <span>Technical Methodology</span>
+    </div>
+    <h1>Feature Engineering<br><em>& ML Strategy</em></h1>
+    <p class="hero-sub">Deep dive into every classical technique used — from texture descriptors to dimensionality reduction and classifier design.</p>
+  </div>
+
+  <!-- PREPROCESSING -->
+  <div class="section fade-in fade-in-1">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Preprocessing Pipeline</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="callout">
+      <strong>Goal:</strong> Normalize inputs across varying industrial lighting conditions, camera calibrations, and surface finish variations — before any feature extraction.
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-num">1</div>
+        <div class="pipe-stage">Grayscale + Resize</div>
+        <div class="pipe-desc">Convert to single-channel grayscale and resize to <code>200×200 px</code>. Grayscale is sufficient for texture-based defect features; color adds noise for steel surfaces.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">2</div>
+        <div class="pipe-stage">Gaussian Blur</div>
+        <div class="pipe-desc">Apply Gaussian kernel (σ=1.0, kernel 3×3) to suppress high-frequency sensor noise. Preserves macro-level surface texture needed for LBP and Gabor analysis.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">3</div>
+        <div class="pipe-stage">CLAHE</div>
+        <div class="pipe-desc">Contrast Limited Adaptive Histogram Equalization with <code>clipLimit=2.0</code>, <code>tileGridSize=(8,8)</code>. Enhances local contrast in defect regions without over-amplifying noise in flat surface areas.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">4</div>
+        <div class="pipe-stage">Bilateral Filter</div>
+        <div class="pipe-desc">Edge-preserving smoothing with <code>d=9, σ_color=75, σ_space=75</code>. Reduces noise within homogeneous regions while keeping defect boundaries sharp for accurate segmentation.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num">5</div>
+        <div class="pipe-stage">Normalization</div>
+        <div class="pipe-desc">Scale pixel values to float32 in [0.0, 1.0] range via min-max normalization. Ensures consistent feature magnitude across images regardless of original exposure settings.</div>
+      </div>
+    </div>
+
+    <div class="code-block" data-lang="python">
+<span class="kw">def</span> <span class="fn">preprocess</span>(img_path):
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (<span class="st">200</span>, <span class="st">200</span>))
+    img = cv2.GaussianBlur(img, (<span class="st">3</span>, <span class="st">3</span>), <span class="st">1.0</span>)
+    clahe = cv2.createCLAHE(clipLimit=<span class="st">2.0</span>, tileGridSize=(<span class="st">8</span>,<span class="st">8</span>))
+    img = clahe.apply(img)
+    img = cv2.bilateralFilter(img, <span class="st">9</span>, <span class="st">75</span>, <span class="st">75</span>)
+    img = img.astype(np.float32) / <span class="st">255.0</span>
+    <span class="kw">return</span> img
+    </div>
+  </div>
+
+  <!-- FEATURE EXTRACTION -->
+  <div class="section fade-in fade-in-2">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Feature Extraction</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <!-- LBP -->
+    <div style="margin-bottom: 32px;">
+      <div style="font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--amber); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: var(--panel); border: 1px solid var(--border2); padding: 2px 8px;">LBP</span>
+        Local Binary Patterns — Texture Analysis
+      </div>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <div class="feat-label">What it captures</div>
+          <div class="feat-desc">Micro-texture patterns by comparing each pixel against its circular neighborhood. Encodes local intensity relationships as binary codes, building a rotation-invariant histogram.</div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-label">Parameters used</div>
+          <div class="feat-desc">Radius R=1 (close neighborhood), P=8 sampling points. <code>uniform</code> variant produces 59-dimensional histogram — robust and compact.</div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-label">Why it works for defects</div>
+          <div class="feat-desc">Scratches and crazing produce distinctly different LBP code distributions compared to smooth base metal. The histogram captures these textural signatures regardless of illumination intensity.</div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-label">Output dimension</div>
+          <div class="feat-desc">59-dimensional normalized histogram vector. Histograms are L1-normalized to sum to 1, making them invariant to region size differences.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gabor -->
+    <div style="margin-bottom: 32px;">
+      <div style="font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--amber); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: var(--panel); border: 1px solid var(--border2); padding: 2px 8px;">GABOR</span>
+        Gabor Filter Bank — Directional Texture
+      </div>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <div class="feat-label">Filter bank design</div>
+          <div class="feat-desc">4 orientations (0°, 45°, 90°, 135°) × 3 scales (σ = 2, 4, 8). 12 total filters designed to match the frequency and orientation selectivity of human visual cortex V1.</div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-label">Why it matters</div>
+          <div class="feat-desc">Scratches are strongly directional. A 0° Gabor filter will respond strongly to horizontal scratches and weakly to vertical ones — enabling orientation-specific defect discrimination.</div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-label">Feature computation</div>
+          <div class="feat-desc">Mean and standard deviation of each filter's response magnitude across the image → 24 features (12 filters × 2 stats). Captures both energy and variability of each orientation-scale response.</div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-label">Output dimension</div>
+          <div class="feat-desc">24-dimensional feature vector. Combined with LBP and other descriptors into the full feature matrix.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GLCM + Shape -->
+    <div class="feat-grid" style="margin-bottom: 24px;">
+      <div class="feat-item">
+        <div class="feat-label">GLCM — Texture Statistics</div>
+        <div class="feat-desc">Gray-Level Co-occurrence Matrix computes: <strong>contrast</strong> (local intensity variation), <strong>energy</strong> (uniformity), <strong>homogeneity</strong> (diagonal dominance), <strong>correlation</strong>, <strong>dissimilarity</strong>. 5 features total at distances [1,3] and angles [0°, 90°].</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">Shape Descriptors</div>
+        <div class="feat-desc">From defect ROI contours: area, perimeter, circularity (4πA/P²), aspect ratio (bbox w/h), convexity (area/convex hull area), extent (area/bbox area), equivalent diameter. These discriminate pitting (circular) from scratches (elongated).</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">Statistical Moments</div>
+        <div class="feat-desc">First 4 statistical moments of the intensity distribution over the image: mean μ, variance σ², skewness (distribution asymmetry), kurtosis (tail heaviness). 4 features providing global intensity profile.</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">HOG Descriptor</div>
+        <div class="feat-desc">Histogram of Oriented Gradients captures edge structure and gradient direction distributions. Captures macro-level surface texture patterns at coarser spatial resolution than LBP.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIM REDUCTION -->
+  <div class="section fade-in fade-in-3">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Dimensionality Reduction</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-item">
+        <div class="feat-label">PCA — Principal Component Analysis</div>
+        <div class="feat-desc">Reduces 100+ dimensional feature vector to 20–30 principal components retaining ≥95% of total variance. Eliminates correlated redundancy between LBP and Gabor features. Fitted on training set only; transform applied consistently to validation and test sets.</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-label">LDA — Linear Discriminant Analysis</div>
+        <div class="feat-desc">Supervised dimensionality reduction that finds linear projections maximizing between-class separation relative to within-class variance. Applied after PCA. Reduces to at most K–1 = 5 dimensions for 6-class problem. Creates the most discriminative feature space for nearest centroid classification.</div>
+      </div>
+    </div>
+
+    <div class="code-block" data-lang="python">
+<span class="cm"># Fit PCA on training features</span>
+pca = PCA(n_components=<span class="st">0.95</span>, svd_solver=<span class="st">'full'</span>)
+X_train_pca = pca.fit_transform(X_train)
+X_test_pca  = pca.transform(X_test)
+
+<span class="cm"># LDA on PCA-reduced features</span>
+lda = LinearDiscriminantAnalysis()
+X_train_lda = lda.fit_transform(X_train_pca, y_train)
+X_test_lda  = lda.transform(X_test_pca)
+
+<span class="cm"># Nearest Centroid in LDA space</span>
+clf = NearestCentroid()
+clf.fit(X_train_lda, y_train)
+y_pred = clf.predict(X_test_lda)
+    </div>
+  </div>
+
+  <!-- ML TRAINING -->
+  <div class="section fade-in fade-in-4">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Model Training Strategy</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="callout">
+      <strong>Validation strategy:</strong> Stratified 5-fold cross-validation ensures balanced class representation in every fold. Final test held-out at 15% with stratified split applied before any fitting.
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Dataset Split</div>
+        <div class="pipe-desc">70% training / 15% validation / 15% test. Stratified sampling ensures each fold contains proportional class representation across all 6 defect categories.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Class Imbalance</div>
+        <div class="pipe-desc">If class counts are imbalanced: SMOTE oversampling in feature space (not image space) on training set only. Alternative: <code>class_weight='balanced'</code> in SVM and RF.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Hyperparameter Tuning</div>
+        <div class="pipe-desc">SVM: Grid search over <code>C ∈ {0.1, 1, 10, 100}</code>, <code>γ ∈ {scale, auto, 0.001, 0.01}</code>. RF: <code>n_estimators ∈ {100, 200, 500}</code>, <code>max_depth ∈ {None, 10, 20}</code>.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Evaluation Metrics</div>
+        <div class="pipe-desc">Macro-averaged Precision, Recall, F1-score. Per-class confusion matrix. Inference latency (ms/image) on standard CPU. Feature importance ranking for RF.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-left">
+    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
+  </div>
+  <div class="footer-right">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="results.html">Results</a>
+  </div>
+</footer>
+
+</body>
+</html>

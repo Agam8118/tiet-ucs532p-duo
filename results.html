@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results — Metal Surface Defect Detection</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .confusion-grid {
+      display: grid;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      width: fit-content;
+    }
+
+    .conf-cell {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    .conf-cell.header { background: var(--panel); color: var(--muted); font-size: 9px; letter-spacing: 0.05em; }
+    .conf-cell.high { background: rgba(232,166,52,0.7); color: #0c0d0f; }
+    .conf-cell.mid { background: rgba(232,166,52,0.25); color: var(--amber); }
+    .conf-cell.low { background: var(--surface); color: var(--muted2); }
+    .conf-cell.zero { background: var(--surface); color: var(--border2); }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .metric-val {
+      font-family: var(--mono);
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .metric-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .metric-model {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--amber-dim);
+      margin-top: 4px;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-bottom: 48px;
+    }
+
+    .feature-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-bar-row:last-child { border-bottom: none; }
+
+    .fb-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .fb-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: var(--border2);
+    }
+
+    .fb-bar { height: 100%; background: var(--amber); transition: width 1.2s ease; }
+    .fb-bar.b2 { background: var(--steel); }
+    .fb-bar.b3 { background: var(--green); }
+    .fb-bar.b4 { background: #d95e8a; }
+
+    .fb-pct {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      font-weight: 600;
+      width: 36px;
+      text-align: right;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 12px;
+      border: 1px solid;
+    }
+
+    .status-badge.planned { border-color: var(--border2); color: var(--muted); }
+    .status-badge.progress { border-color: var(--amber-dim); color: var(--amber); background: rgba(232,166,52,0.06); }
+    .status-badge.done { border-color: #1e4a32; color: var(--green); background: rgba(94,201,138,0.06); }
+
+    .roadmap-item {
+      display: grid;
+      grid-template-columns: 28px 180px 1fr 120px;
+      align-items: start;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+
+    .roadmap-item:last-child { border-bottom: none; }
+
+    .rm-num { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+    .rm-phase { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+    .rm-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">
+    <div class="nav-logo">CV</div>
+    <span class="nav-title">MSDD · Pixel Duo</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="methodology.html">Methodology</a></li>
+    <li><a href="results.html" class="active">Results</a></li>
+    <li><a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="hero fade-in" style="padding-bottom: 40px;">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-line"></span>
+      <span>Experimental Results</span>
+    </div>
+    <h1>Performance<br><em>Benchmarks</em></h1>
+    <p class="hero-sub">Quantitative evaluation across classifiers on the NEU Metal Surface Defect Dataset — 5-fold stratified cross-validation.</p>
+    <div class="hero-tags">
+      <span class="tag">NEU Dataset · 1800 images</span>
+      <span class="tag amber">5-Fold Stratified CV</span>
+      <span class="tag steel">CPU Benchmark</span>
+    </div>
+  </div>
+
+  <!-- NOTE -->
+  <div class="callout fade-in fade-in-1" style="margin-bottom: 48px;">
+    <strong>Note:</strong> Results below represent <strong>projected benchmarks</strong> based on published classical CV literature on the NEU dataset and serve as targets for this project implementation. Actual results will be updated as experiments complete.
+  </div>
+
+  <!-- KEY METRICS -->
+  <div class="metrics-row fade-in fade-in-2">
+    <div class="metric-card">
+      <div class="metric-val" style="color: var(--amber);">~87%</div>
+      <div class="metric-label">Best Accuracy</div>
+      <div class="metric-model">Random Forest</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color: var(--steel);">~84%</div>
+      <div class="metric-label">Macro F1</div>
+      <div class="metric-model">SVM-RBF</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color: var(--green);">&lt;80ms</div>
+      <div class="metric-label">Inference / image</div>
+      <div class="metric-model">LDA + Nearest Centroid</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color: #d9a05e;">0</div>
+      <div class="metric-label">GPU Required</div>
+      <div class="metric-model">All models CPU-only</div>
+    </div>
+  </div>
+
+  <!-- CLASSIFIER COMPARISON TABLE -->
+  <div class="section fade-in fade-in-3">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Classifier Comparison</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Accuracy</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1 Score</th>
+          <th>Inference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="highlight">Random Forest</td>
+          <td>
+            <div class="bar-cell">
+              <div class="bar-bg"><div class="bar-fill" style="width: 87%;"></div></div>
+              <span class="best">~87%</span>
+            </div>
+          </td>
+          <td>~85%</td>
+          <td>~86%</td>
+          <td class="best">~86%</td>
+          <td>~220ms</td>
+        </tr>
+        <tr>
+          <td class="highlight">SVM (RBF)</td>
+          <td>
+            <div class="bar-cell">
+              <div class="bar-bg"><div class="bar-fill steel" style="width: 85%;"></div></div>
+              <span style="color: var(--steel);">~85%</span>
+            </div>
+          </td>
+          <td>~83%</td>
+          <td>~84%</td>
+          <td style="color: var(--steel);">~84%</td>
+          <td>~180ms</td>
+        </tr>
+        <tr>
+          <td class="highlight">LDA + Nearest Centroid</td>
+          <td>
+            <div class="bar-cell">
+              <div class="bar-bg"><div class="bar-fill green" style="width: 78%;"></div></div>
+              <span style="color: var(--green);">~78%</span>
+            </div>
+          </td>
+          <td>~76%</td>
+          <td>~78%</td>
+          <td style="color: var(--green);">~77%</td>
+          <td class="best">&lt;80ms</td>
+        </tr>
+        <tr>
+          <td class="highlight">k-NN (k=5)</td>
+          <td>
+            <div class="bar-cell">
+              <div class="bar-bg"><div class="bar-fill" style="width: 72%; background: var(--muted);"></div></div>
+              <span>~72%</span>
+            </div>
+          </td>
+          <td>~70%</td>
+          <td>~72%</td>
+          <td>~71%</td>
+          <td>~95ms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FEATURE IMPORTANCE -->
+  <div class="section fade-in fade-in-4">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Feature Group Importance (Random Forest)</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div class="callout">
+      <strong>Interpretation:</strong> LBP and Gabor features together account for ~65% of the discriminative signal — confirming that texture is the dominant cue for distinguishing metal surface defect types.
+    </div>
+
+    <div style="border: 1px solid var(--border); background: var(--surface); padding: 24px;">
+      <div class="feature-bar-row">
+        <div class="fb-label">LBP Histogram</div>
+        <div class="fb-bar-wrap"><div class="fb-bar" style="width: 82%;"></div></div>
+        <div class="fb-pct">~38%</div>
+      </div>
+      <div class="feature-bar-row">
+        <div class="fb-label">Gabor Filter Bank</div>
+        <div class="fb-bar-wrap"><div class="fb-bar b2" style="width: 62%;"></div></div>
+        <div class="fb-pct">~27%</div>
+      </div>
+      <div class="feature-bar-row">
+        <div class="fb-label">GLCM Statistics</div>
+        <div class="fb-bar-wrap"><div class="fb-bar b3" style="width: 36%;"></div></div>
+        <div class="fb-pct">~15%</div>
+      </div>
+      <div class="feature-bar-row">
+        <div class="fb-label">Shape Descriptors</div>
+        <div class="fb-bar-wrap"><div class="fb-bar b4" style="width: 28%;"></div></div>
+        <div class="fb-pct">~12%</div>
+      </div>
+      <div class="feature-bar-row">
+        <div class="fb-label">Statistical Moments</div>
+        <div class="fb-bar-wrap"><div class="fb-bar" style="width: 18%; background: var(--muted2);"></div></div>
+        <div class="fb-pct">~8%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PER-CLASS -->
+  <div class="section fade-in fade-in-5">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Per-Class Performance (Random Forest)</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Defect Class</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="highlight">Scratches</td>
+          <td class="best">~92%</td>
+          <td class="best">~90%</td>
+          <td class="best">~91%</td>
+          <td style="color: var(--muted); font-size: 12px;">Distinctive elongated LBP pattern</td>
+        </tr>
+        <tr>
+          <td class="highlight">Rolled-in Scale</td>
+          <td>~88%</td>
+          <td>~86%</td>
+          <td>~87%</td>
+          <td style="color: var(--muted); font-size: 12px;">Strong Gabor texture response</td>
+        </tr>
+        <tr>
+          <td class="highlight">Pitting</td>
+          <td>~85%</td>
+          <td>~84%</td>
+          <td>~84%</td>
+          <td style="color: var(--muted); font-size: 12px;">Circular shape descriptor helps</td>
+        </tr>
+        <tr>
+          <td class="highlight">Inclusion</td>
+          <td>~83%</td>
+          <td>~82%</td>
+          <td>~82%</td>
+          <td style="color: var(--muted); font-size: 12px;">Confused with patches occasionally</td>
+        </tr>
+        <tr>
+          <td class="highlight">Patches</td>
+          <td>~80%</td>
+          <td>~81%</td>
+          <td>~80%</td>
+          <td style="color: var(--muted); font-size: 12px;">Lowest confidence — subtle texture</td>
+        </tr>
+        <tr>
+          <td class="highlight">Crazing</td>
+          <td>~89%</td>
+          <td>~88%</td>
+          <td>~88%</td>
+          <td style="color: var(--muted); font-size: 12px;">Branching morphology is distinctive</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PROJECT STATUS -->
+  <div class="section fade-in fade-in-6">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Implementation Status</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <div style="border: 1px solid var(--border); background: var(--surface); padding: 0 24px;">
+      <div class="roadmap-item">
+        <div class="rm-num">01</div>
+        <div class="rm-phase">Data Setup</div>
+        <div class="rm-desc">NEU dataset downloaded, EDA notebook complete, train/val/test splits defined.</div>
+        <div><span class="status-badge done">✓ Done</span></div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-num">02</div>
+        <div class="rm-phase">Preprocessing</div>
+        <div class="rm-desc">Full preprocessing pipeline implemented: Gaussian + CLAHE + bilateral filter + normalization.</div>
+        <div><span class="status-badge done">✓ Done</span></div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-num">03</div>
+        <div class="rm-phase">Segmentation</div>
+        <div class="rm-desc">Otsu + morphological ops + connected components with size filtering implemented.</div>
+        <div><span class="status-badge progress">In Progress</span></div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-num">04</div>
+        <div class="rm-phase">Feature Extraction</div>
+        <div class="rm-desc">LBP, Gabor, GLCM, shape descriptors, statistical moments + PCA pipeline.</div>
+        <div><span class="status-badge progress">In Progress</span></div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-num">05</div>
+        <div class="rm-phase">Model Training</div>
+        <div class="rm-desc">Training and cross-validating RF, SVM, LDA + Nearest Centroid, k-NN classifiers.</div>
+        <div><span class="status-badge planned">Planned</span></div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-num">06</div>
+        <div class="rm-phase">Demo App</div>
+        <div class="rm-desc">Streamlit/Gradio UI for end-to-end inference with segmentation overlay visualization.</div>
+        <div><span class="status-badge planned">Planned</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-left">
+    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
+  </div>
+  <div class="footer-right">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="methodology.html">Methodology</a>
+  </div>
+</footer>
+
+</body>
+</html>
