@@ -1,11 +1,11 @@
 title: Metal Surface Defect Detection
 description: Classical Computer Vision Framework for Industrial Surface Inspection
-theme: minima
+theme: 
 
 header_pages:
-  - index.md
-  - architecture.md
-  - methodology.md
-  - results.md
+  - index.html
+  - architecture.html
+  - methodology.html
+  - results.html
 
 author: Agampreet Singh
