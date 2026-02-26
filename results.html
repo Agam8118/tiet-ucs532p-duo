@@ -3,833 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Results — Metal Surface Defect Detection</title>
+  <title>Dataset & Results — Metal Surface Defect Detection</title>
   <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --bg:       #0c0d0f;
-  --surface:  #131518;
-  --panel:    #181a1e;
-  --border:   #222428;
-  --border2:  #2c2f35;
-  --amber:    #e8a634;
-  --amber-dim:#7a5414;
-  --steel:    #8eb4c8;
-  --red:      #d95e5e;
-  --green:    #5ec98a;
-  --text:     #d6d9e0;
-  --muted:    #5a5f6e;
-  --muted2:   #3a3f4a;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.7;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Scanline texture */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.06) 2px,
-    rgba(0,0,0,0.06) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* ── NAV ── */
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(12,13,15,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  height: 56px;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.nav-logo {
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid var(--amber);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--amber);
-  letter-spacing: -0.05em;
-}
-
-.nav-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  list-style: none;
-}
-
-.nav-links a {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
-  text-decoration: none;
-  padding: 6px 14px;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-  position: relative;
-}
-
-.nav-links a:hover,
-.nav-links a.active {
-  color: var(--amber);
-}
-
-.nav-links a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 14px;
-  right: 14px;
-  height: 1px;
-  background: var(--amber);
-}
-
-/* ── LAYOUT ── */
-.page-wrap {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 0 32px 80px;
-}
-
-/* ── HERO ── */
-.hero {
-  padding: 80px 0 64px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 64px;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero::before {
-  content: 'DEFECT\ADETECT';
-  white-space: pre;
-  position: absolute;
-  right: -20px;
-  top: 20px;
-  font-family: var(--mono);
-  font-size: 120px;
-  font-weight: 700;
-  line-height: 0.9;
-  color: rgba(232,166,52,0.04);
-  pointer-events: none;
-  letter-spacing: -0.06em;
-  user-select: none;
-}
-
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.eyebrow-line {
-  width: 32px;
-  height: 1px;
-  background: var(--amber);
-}
-
-.eyebrow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--amber);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(232,166,52,0.4); }
-  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(232,166,52,0); }
-}
-
-.hero h1 {
-  font-family: var(--mono);
-  font-size: clamp(28px, 4vw, 48px);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  margin-bottom: 8px;
-  color: #fff;
-}
-
-.hero h1 em {
-  font-style: normal;
-  color: var(--amber);
-}
-
-.hero-sub {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--muted);
-  margin-bottom: 36px;
-  letter-spacing: 0.04em;
-}
-
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 40px;
-}
-
-.tag {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 4px 12px;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.tag.amber { border-color: var(--amber-dim); color: var(--amber); background: rgba(232,166,52,0.06); }
-.tag.steel { border-color: #2a4a5a; color: var(--steel); background: rgba(142,180,200,0.06); }
-.tag.green { border-color: #1e4a32; color: var(--green); background: rgba(94,201,138,0.06); }
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 10px 22px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  cursor: pointer;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--amber);
-  color: #0c0d0f;
-}
-
-.btn-primary:hover {
-  background: #f0b84a;
-  box-shadow: 0 0 24px rgba(232,166,52,0.3);
-}
-
-.btn-ghost {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-}
-
-.btn-ghost:hover {
-  border-color: var(--amber-dim);
-  color: var(--amber);
-}
-
-/* ── STAT ROW ── */
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--border);
-  margin-bottom: 64px;
-  background: var(--surface);
-}
-
-.stat {
-  padding: 24px 28px;
-  border-right: 1px solid var(--border);
-}
-
-.stat:last-child { border-right: none; }
-
-.stat-val {
-  font-family: var(--mono);
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--amber);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-}
-
-/* ── SECTION ── */
-.section { margin-bottom: 64px; }
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 28px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.section-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--amber);
-  letter-spacing: 0.15em;
-}
-
-.section-title {
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.section-divider {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-/* ── GRID CARDS ── */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-}
-
-.card {
-  background: var(--surface);
-  padding: 24px;
-  transition: background 0.2s;
-}
-
-.card:hover { background: var(--panel); }
-
-.card-icon {
-  font-size: 22px;
-  margin-bottom: 12px;
-  display: block;
-}
-
-.card-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--amber);
-  margin-bottom: 8px;
-  letter-spacing: 0.02em;
-}
-
-.card-body {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-/* ── PIPELINE TABLE ── */
-.pipeline {
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.pipeline-row {
-  display: grid;
-  grid-template-columns: 48px 200px 1fr;
-  align-items: start;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.pipeline-row:last-child { border-bottom: none; }
-.pipeline-row:hover { background: var(--panel); }
-
-.pipe-num {
-  padding: 20px 0 20px 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--amber-dim);
-  font-weight: 700;
-}
-
-.pipe-stage {
-  padding: 20px 16px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--amber);
-  border-right: 1px solid var(--border);
-}
-
-.pipe-desc {
-  padding: 20px 24px;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.pipe-desc code {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border2);
-  padding: 1px 6px;
-  color: var(--steel);
-}
-
-/* ── CODE BLOCK ── */
-.code-block {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  padding: 24px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--steel);
-  line-height: 1.7;
-  overflow-x: auto;
-  margin: 20px 0;
-  position: relative;
-}
-
-.code-block::before {
-  content: attr(data-lang);
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 10px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.code-block .kw { color: var(--amber); }
-.code-block .cm { color: var(--muted); font-style: italic; }
-.code-block .fn { color: var(--green); }
-.code-block .st { color: #c9a87c; }
-
-/* ── RESULT TABLE ── */
-.result-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--mono);
-  font-size: 12px;
-  border: 1px solid var(--border);
-}
-
-.result-table thead tr {
-  background: var(--panel);
-  border-bottom: 2px solid var(--amber-dim);
-}
-
-.result-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--amber);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 10px;
-}
-
-.result-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-}
-
-.result-table tr:hover td { background: var(--panel); }
-.result-table td.highlight { color: var(--text); font-weight: 600; }
-.result-table td.best { color: var(--green); font-weight: 700; }
-
-.bar-cell { display: flex; align-items: center; gap: 10px; }
-.bar-bg {
-  height: 6px;
-  background: var(--border2);
-  flex: 1;
-  position: relative;
-}
-.bar-fill {
-  height: 100%;
-  background: var(--amber);
-  transition: width 1s ease;
-}
-.bar-fill.steel { background: var(--steel); }
-.bar-fill.green { background: var(--green); }
-
-/* ── CALLOUT ── */
-.callout {
-  border-left: 3px solid var(--amber);
-  background: rgba(232,166,52,0.05);
-  padding: 16px 20px;
-  margin: 20px 0;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.callout strong { color: var(--amber); font-family: var(--mono); }
-
-/* ── FEATURE GRID ── */
-.feat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-
-.feat-item {
-  background: var(--surface);
-  padding: 20px 22px;
-}
-
-.feat-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--amber);
-  margin-bottom: 6px;
-}
-
-.feat-desc {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-/* ── FOOTER ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 32px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.footer-left {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.footer-left a { color: var(--amber); text-decoration: none; }
-.footer-left a:hover { text-decoration: underline; }
-
-.footer-right {
-  display: flex;
-  gap: 20px;
-}
-
-.footer-right a {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-}
-
-.footer-right a:hover { color: var(--amber); }
-
-/* ── ARCH DIAGRAM ── */
-.arch-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid var(--border);
-}
-
-.arch-node {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.arch-node:last-child { border-bottom: none; }
-.arch-node:hover { background: var(--panel); }
-
-.arch-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0;
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  gap: 4px;
-}
-
-.arch-step-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--amber);
-}
-
-.arch-step-arrow {
-  color: var(--border2);
-  font-size: 14px;
-}
-
-.arch-content {
-  padding: 20px 28px;
-}
-
-.arch-name {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 6px;
-}
-
-.arch-detail {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.arch-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.chip {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 3px 8px;
-  background: var(--panel);
-  border: 1px solid var(--border2);
-  color: var(--steel);
-  letter-spacing: 0.04em;
-}
-
-/* ── ANIMATIONS ── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in { animation: fadeIn 0.6s ease both; }
-.fade-in-1 { animation-delay: 0.1s; }
-.fade-in-2 { animation-delay: 0.2s; }
-.fade-in-3 { animation-delay: 0.3s; }
-.fade-in-4 { animation-delay: 0.4s; }
-.fade-in-5 { animation-delay: 0.5s; }
-.fade-in-6 { animation-delay: 0.6s; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  nav { padding: 0 20px; }
-  .page-wrap { padding: 0 20px 60px; }
-  .stat-row { grid-template-columns: 1fr 1fr; }
-  .stat { border-bottom: 1px solid var(--border); }
-  .feat-grid { grid-template-columns: 1fr; }
-  .pipeline-row { grid-template-columns: 40px 140px 1fr; }
-  .hero::before { display: none; }
-}
-
-</style>
-  <style>
-    .confusion-grid {
-      display: grid;
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 11px;
-      width: fit-content;
-    }
-
-    .conf-cell {
-      width: 52px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-    }
-
-    .conf-cell.header { background: var(--panel); color: var(--muted); font-size: 9px; letter-spacing: 0.05em; }
-    .conf-cell.high { background: rgba(232,166,52,0.7); color: #0c0d0f; }
-    .conf-cell.mid { background: rgba(232,166,52,0.25); color: var(--amber); }
-    .conf-cell.low { background: var(--surface); color: var(--muted2); }
-    .conf-cell.zero { background: var(--surface); color: var(--border2); }
-
-    .metric-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .metric-val {
-      font-family: var(--mono);
-      font-size: 42px;
-      font-weight: 700;
-      letter-spacing: -0.04em;
-      line-height: 1;
-    }
-
-    .metric-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-    }
-
-    .metric-model {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--amber-dim);
-      margin-top: 4px;
-    }
-
-    .metrics-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--border);
-      margin-bottom: 48px;
-    }
-
-    .feature-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .feature-bar-row:last-child { border-bottom: none; }
-
-    .fb-label {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      width: 140px;
-      flex-shrink: 0;
-    }
-
-    .fb-bar-wrap {
-      flex: 1;
-      height: 8px;
-      background: var(--border2);
-    }
-
-    .fb-bar { height: 100%; background: var(--amber); transition: width 1.2s ease; }
-    .fb-bar.b2 { background: var(--steel); }
-    .fb-bar.b3 { background: var(--green); }
-    .fb-bar.b4 { background: #d95e8a; }
-
-    .fb-pct {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text);
-      font-weight: 600;
-      width: 36px;
-      text-align: right;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 4px 12px;
-      border: 1px solid;
-    }
-
-    .status-badge.planned { border-color: var(--border2); color: var(--muted); }
-    .status-badge.progress { border-color: var(--amber-dim); color: var(--amber); background: rgba(232,166,52,0.06); }
-    .status-badge.done { border-color: #1e4a32; color: var(--green); background: rgba(94,201,138,0.06); }
-
-    .roadmap-item {
-      display: grid;
-      grid-template-columns: 28px 180px 1fr 120px;
-      align-items: start;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border);
-      gap: 16px;
-    }
-
-    .roadmap-item:last-child { border-bottom: none; }
-
-    .rm-num { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
-    .rm-phase { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
-    .rm-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+:root{--bg:#0c0d0f;--surface:#131518;--panel:#181a1e;--border:#222428;--border2:#2c2f35;--amber:#e8a634;--amber-dim:#7a5414;--steel:#8eb4c8;--red:#d95e5e;--green:#5ec98a;--text:#d6d9e0;--muted:#5a5f6e;--muted2:#3a3f4a;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:9999}
+nav{position:sticky;top:0;z-index:100;background:rgba(12,13,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:56px}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{width:28px;height:28px;border:1.5px solid var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:-.05em}
+.nav-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;letter-spacing:.04em;transition:color .2s;position:relative}
+.nav-links a:hover,.nav-links a.active{color:var(--amber)}
+.nav-links a.active::after{content:'';position:absolute;bottom:-1px;left:14px;right:14px;height:1px;background:var(--amber)}
+.page-wrap{max-width:1060px;margin:0 auto;padding:0 32px 80px}
+.hero{padding:80px 0 48px;border-bottom:1px solid var(--border);margin-bottom:64px;position:relative;overflow:hidden}
+.hero-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:24px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.eyebrow-line{width:32px;height:1px;background:var(--amber)}
+.hero h1{font-family:var(--mono);font-size:clamp(28px,4vw,48px);font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#fff}
+.hero h1 em{font-style:normal;color:var(--amber)}
+.hero-sub{font-family:var(--mono);font-size:14px;color:var(--muted);letter-spacing:.04em}
+.section{margin-bottom:64px}
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.section-num{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.15em}
+.section-title{font-family:var(--mono);font-size:18px;font-weight:600;color:#fff;letter-spacing:-.01em}
+.section-divider{flex:1;height:1px;background:var(--border)}
+.prose{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:20px}
+.callout{border-left:3px solid var(--amber);background:rgba(232,166,52,.05);padding:16px 20px;margin:20px 0;font-size:13px;color:var(--muted);line-height:1.6}
+.callout strong{color:var(--amber);font-family:var(--mono)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border)}
+.card{background:var(--surface);padding:24px;transition:background .2s}
+.card:hover{background:var(--panel)}
+.card-icon{font-size:22px;margin-bottom:12px;display:block}
+.card-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);margin-bottom:8px;letter-spacing:.02em}
+.card-body{font-size:13px;color:var(--muted);line-height:1.6}
+.pipeline{border:1px solid var(--border);background:var(--surface)}
+.pipeline-row{display:grid;grid-template-columns:48px 200px 1fr;align-items:start;border-bottom:1px solid var(--border);transition:background .2s}
+.pipeline-row:last-child{border-bottom:none}
+.pipeline-row:hover{background:var(--panel)}
+.pipe-num{padding:20px 0 20px 20px;font-family:var(--mono);font-size:11px;color:var(--amber-dim);font-weight:700}
+.pipe-stage{padding:20px 16px;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);border-right:1px solid var(--border)}
+.pipe-desc{padding:20px 24px;font-size:13px;color:var(--muted);line-height:1.6}
+.pipe-desc code{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--border2);padding:1px 6px;color:var(--steel)}
+.result-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;border:1px solid var(--border)}
+.result-table thead tr{background:var(--panel);border-bottom:2px solid var(--amber-dim)}
+.result-table th{padding:12px 16px;text-align:left;font-weight:600;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;font-size:10px}
+.result-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--muted)}
+.result-table tr:hover td{background:var(--panel)}
+.result-table td.highlight{color:var(--text);font-weight:600}
+.result-table td.best{color:var(--green);font-weight:700}
+.status-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:4px 12px;border:1px solid}
+.status-badge.planned{border-color:var(--border2);color:var(--muted)}
+.status-badge.progress{border-color:var(--amber-dim);color:var(--amber);background:rgba(232,166,52,.06)}
+.status-badge.done{border-color:#1e4a32;color:var(--green);background:rgba(94,201,138,.06)}
+.roadmap-item{display:grid;grid-template-columns:28px 180px 1fr 120px;align-items:start;padding:16px 0;border-bottom:1px solid var(--border);gap:16px}
+.roadmap-item:last-child{border-bottom:none}
+.rm-num{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.rm-phase{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
+.rm-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.class-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:20px}
+.class-card{background:var(--surface);padding:28px}
+.class-label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
+.class-label.c0{color:var(--green)}
+.class-label.c1{color:var(--amber)}
+.class-num{font-family:var(--mono);font-size:40px;font-weight:700;line-height:1;margin-bottom:8px}
+.class-num.c0{color:var(--green)}
+.class-num.c1{color:var(--amber)}
+.class-desc{font-size:13px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);padding:32px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-left{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.footer-left a{color:var(--amber);text-decoration:none}
+.footer-right{display:flex;gap:20px}
+.footer-right a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.footer-right a:hover{color:var(--amber)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .6s ease both}
+.fade-in-1{animation-delay:.1s}.fade-in-2{animation-delay:.2s}.fade-in-3{animation-delay:.3s}.fade-in-4{animation-delay:.4s}.fade-in-5{animation-delay:.5s}
+@media(max-width:768px){nav{padding:0 20px}.page-wrap{padding:0 20px 60px}.class-row{grid-template-columns:1fr}.pipeline-row{grid-template-columns:40px 130px 1fr}.roadmap-item{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -850,274 +103,157 @@ footer {
 
 <div class="page-wrap">
 
-  <div class="hero fade-in" style="padding-bottom: 40px;">
+  <div class="hero fade-in">
     <div class="hero-eyebrow">
       <span class="eyebrow-line"></span>
-      <span>Experimental Results</span>
+      <span>§5 — Dataset &amp; Results</span>
     </div>
-    <h1>Performance<br><em>Benchmarks</em></h1>
-    <p class="hero-sub">Quantitative evaluation across classifiers on the NEU Metal Surface Defect Dataset — 5-fold stratified cross-validation.</p>
-    <div class="hero-tags">
-      <span class="tag">NEU Dataset · 1800 images</span>
-      <span class="tag amber">5-Fold Stratified CV</span>
-      <span class="tag steel">CPU Benchmark</span>
-    </div>
+    <h1>Dataset Description<br><em>&amp; Benchmarks</em></h1>
+    <p class="hero-sub">Two-class dataset combining the NEU Surface Defect Dataset (Scratch class) with self-collected No-Defect images.</p>
   </div>
 
-  <!-- NOTE -->
-  <div class="callout fade-in fade-in-1" style="margin-bottom: 48px;">
-    <strong>Note:</strong> Results below represent <strong>projected benchmarks</strong> based on published classical CV literature on the NEU dataset and serve as targets for this project implementation. Actual results will be updated as experiments complete.
-  </div>
-
-  <!-- KEY METRICS -->
-  <div class="metrics-row fade-in fade-in-2">
-    <div class="metric-card">
-      <div class="metric-val" style="color: var(--amber);">~87%</div>
-      <div class="metric-label">Best Accuracy</div>
-      <div class="metric-model">Random Forest</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-val" style="color: var(--steel);">~84%</div>
-      <div class="metric-label">Macro F1</div>
-      <div class="metric-model">SVM-RBF</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-val" style="color: var(--green);">&lt;80ms</div>
-      <div class="metric-label">Inference / image</div>
-      <div class="metric-model">LDA + Nearest Centroid</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-val" style="color: #d9a05e;">0</div>
-      <div class="metric-label">GPU Required</div>
-      <div class="metric-model">All models CPU-only</div>
-    </div>
-  </div>
-
-  <!-- CLASSIFIER COMPARISON TABLE -->
-  <div class="section fade-in fade-in-3">
+  <!-- DATASET OVERVIEW -->
+  <div class="section fade-in fade-in-1">
     <div class="section-header">
-      <span class="section-num">01</span>
-      <span class="section-title">Classifier Comparison</span>
+      <span class="section-num">5.1</span>
+      <span class="section-title">Dataset Overview</span>
       <span class="section-divider"></span>
     </div>
 
-    <table class="result-table">
-      <thead>
-        <tr>
-          <th>Model</th>
-          <th>Accuracy</th>
-          <th>Precision</th>
-          <th>Recall</th>
-          <th>F1 Score</th>
-          <th>Inference</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="highlight">Random Forest</td>
-          <td>
-            <div class="bar-cell">
-              <div class="bar-bg"><div class="bar-fill" style="width: 87%;"></div></div>
-              <span class="best">~87%</span>
-            </div>
-          </td>
-          <td>~85%</td>
-          <td>~86%</td>
-          <td class="best">~86%</td>
-          <td>~220ms</td>
-        </tr>
-        <tr>
-          <td class="highlight">SVM (RBF)</td>
-          <td>
-            <div class="bar-cell">
-              <div class="bar-bg"><div class="bar-fill steel" style="width: 85%;"></div></div>
-              <span style="color: var(--steel);">~85%</span>
-            </div>
-          </td>
-          <td>~83%</td>
-          <td>~84%</td>
-          <td style="color: var(--steel);">~84%</td>
-          <td>~180ms</td>
-        </tr>
-        <tr>
-          <td class="highlight">LDA + Nearest Centroid</td>
-          <td>
-            <div class="bar-cell">
-              <div class="bar-bg"><div class="bar-fill green" style="width: 78%;"></div></div>
-              <span style="color: var(--green);">~78%</span>
-            </div>
-          </td>
-          <td>~76%</td>
-          <td>~78%</td>
-          <td style="color: var(--green);">~77%</td>
-          <td class="best">&lt;80ms</td>
-        </tr>
-        <tr>
-          <td class="highlight">k-NN (k=5)</td>
-          <td>
-            <div class="bar-cell">
-              <div class="bar-bg"><div class="bar-fill" style="width: 72%; background: var(--muted);"></div></div>
-              <span>~72%</span>
-            </div>
-          </td>
-          <td>~70%</td>
-          <td>~72%</td>
-          <td>~71%</td>
-          <td>~95ms</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <p class="prose">The dataset used in this project consists of two classes: <strong style="color:var(--amber)">Scratch (Defect)</strong> and <strong style="color:var(--green)">No-Defect (Normal)</strong>. This binary construction directly reflects the practical MSME inspection scenario — a production line system needs to answer one question: is this part defective or not?</p>
 
-  <!-- FEATURE IMPORTANCE -->
-  <div class="section fade-in fade-in-4">
-    <div class="section-header">
-      <span class="section-num">02</span>
-      <span class="section-title">Feature Group Importance (Random Forest)</span>
-      <span class="section-divider"></span>
+    <div class="class-row">
+      <div class="class-card">
+        <div class="class-label c1">Class 1 — Scratch (Defect)</div>
+        <div class="class-num c1">NEU</div>
+        <div class="class-desc">Images sourced from the <strong style="color:var(--text)">NEU Surface Defect Dataset</strong> — a publicly available benchmark containing labeled steel surface defect images. Only the <strong style="color:var(--amber)">Scratches (Sc)</strong> class is used. These images represent real industrial steel surfaces with visible scratch defects captured under controlled imaging conditions.</div>
+      </div>
+      <div class="class-card">
+        <div class="class-label c0">Class 0 — No-Defect (Normal)</div>
+        <div class="class-num c0">Self</div>
+        <div class="class-desc">Since the NEU dataset contains <strong style="color:var(--text)">only defective samples</strong>, defect-free metal surface images are <strong style="color:var(--green)">self-collected</strong> to form the normal class. Captured using the same camera setup, viewing angle, and lighting conditions as the defect samples to ensure domain consistency.</div>
+      </div>
     </div>
 
     <div class="callout">
-      <strong>Interpretation:</strong> LBP and Gabor features together account for ~65% of the discriminative signal — confirming that texture is the dominant cue for distinguishing metal surface defect types.
-    </div>
-
-    <div style="border: 1px solid var(--border); background: var(--surface); padding: 24px;">
-      <div class="feature-bar-row">
-        <div class="fb-label">LBP Histogram</div>
-        <div class="fb-bar-wrap"><div class="fb-bar" style="width: 82%;"></div></div>
-        <div class="fb-pct">~38%</div>
-      </div>
-      <div class="feature-bar-row">
-        <div class="fb-label">Gabor Filter Bank</div>
-        <div class="fb-bar-wrap"><div class="fb-bar b2" style="width: 62%;"></div></div>
-        <div class="fb-pct">~27%</div>
-      </div>
-      <div class="feature-bar-row">
-        <div class="fb-label">GLCM Statistics</div>
-        <div class="fb-bar-wrap"><div class="fb-bar b3" style="width: 36%;"></div></div>
-        <div class="fb-pct">~15%</div>
-      </div>
-      <div class="feature-bar-row">
-        <div class="fb-label">Shape Descriptors</div>
-        <div class="fb-bar-wrap"><div class="fb-bar b4" style="width: 28%;"></div></div>
-        <div class="fb-pct">~12%</div>
-      </div>
-      <div class="feature-bar-row">
-        <div class="fb-label">Statistical Moments</div>
-        <div class="fb-bar-wrap"><div class="fb-bar" style="width: 18%; background: var(--muted2);"></div></div>
-        <div class="fb-pct">~8%</div>
-      </div>
+      <strong>Why self-collect the normal class?</strong> The NEU dataset provides no defect-free reference images — a critical gap for binary classification. Mixing unrelated public datasets would introduce domain mismatch. Self-collected images from the same setup ensure the classifier learns the correct surface texture of <em>this</em> workshop's components, not a different factory's steel.
     </div>
   </div>
 
-  <!-- PER-CLASS -->
-  <div class="section fade-in fade-in-5">
+  <!-- DATASET CHARACTERISTICS -->
+  <div class="section fade-in fade-in-2">
     <div class="section-header">
-      <span class="section-num">03</span>
-      <span class="section-title">Per-Class Performance (Random Forest)</span>
+      <span class="section-num">5.2</span>
+      <span class="section-title">Dataset Characteristics</span>
       <span class="section-divider"></span>
     </div>
 
-    <table class="result-table">
-      <thead>
-        <tr>
-          <th>Defect Class</th>
-          <th>Precision</th>
-          <th>Recall</th>
-          <th>F1</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="highlight">Scratches</td>
-          <td class="best">~92%</td>
-          <td class="best">~90%</td>
-          <td class="best">~91%</td>
-          <td style="color: var(--muted); font-size: 12px;">Distinctive elongated LBP pattern</td>
-        </tr>
-        <tr>
-          <td class="highlight">Rolled-in Scale</td>
-          <td>~88%</td>
-          <td>~86%</td>
-          <td>~87%</td>
-          <td style="color: var(--muted); font-size: 12px;">Strong Gabor texture response</td>
-        </tr>
-        <tr>
-          <td class="highlight">Pitting</td>
-          <td>~85%</td>
-          <td>~84%</td>
-          <td>~84%</td>
-          <td style="color: var(--muted); font-size: 12px;">Circular shape descriptor helps</td>
-        </tr>
-        <tr>
-          <td class="highlight">Inclusion</td>
-          <td>~83%</td>
-          <td>~82%</td>
-          <td>~82%</td>
-          <td style="color: var(--muted); font-size: 12px;">Confused with patches occasionally</td>
-        </tr>
-        <tr>
-          <td class="highlight">Patches</td>
-          <td>~80%</td>
-          <td>~81%</td>
-          <td>~80%</td>
-          <td style="color: var(--muted); font-size: 12px;">Lowest confidence — subtle texture</td>
-        </tr>
-        <tr>
-          <td class="highlight">Crazing</td>
-          <td>~89%</td>
-          <td>~88%</td>
-          <td>~88%</td>
-          <td style="color: var(--muted); font-size: 12px;">Branching morphology is distinctive</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Image Type</div>
+        <div class="pipe-desc">Grayscale / RGB. Converted to grayscale during preprocessing. Original NEU images are grayscale; self-collected images captured as RGB and converted.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Resolution</div>
+        <div class="pipe-desc">Uniformly resized to a fixed resolution (200×200 px) during preprocessing. Original NEU resolution is 200×200 px; self-collected images resized to match.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Classes</div>
+        <div class="pipe-desc"><code>Class 0</code> — No-Defect (normal steel surface, no visible scratch, dent, or corrosion) &nbsp;·&nbsp; <code>Class 1</code> — Scratch (visible linear scratch defect on steel surface)</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Conditions</div>
+        <div class="pipe-desc">Realistic workshop lighting and surface variations. No controlled laboratory conditions. Both classes captured under matching camera geometry, viewpoint, and approximate illumination.</div>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipe-num"></div>
+        <div class="pipe-stage">Domain Consistency</div>
+        <div class="pipe-desc">Self-collected No-Defect images use the same camera setup, viewing angle, and lighting conditions as the NEU Scratch images — avoiding domain mismatch that would inflate or deflate classifier performance.</div>
+      </div>
+    </div>
   </div>
 
-  <!-- PROJECT STATUS -->
-  <div class="section fade-in fade-in-6">
+  <!-- NORMAL CLASS COLLECTION -->
+  <div class="section fade-in fade-in-3">
     <div class="section-header">
-      <span class="section-num">04</span>
+      <span class="section-num">5.3</span>
+      <span class="section-title">No-Defect Image Collection Protocol</span>
+      <span class="section-divider"></span>
+    </div>
+
+    <p class="prose">The self-collected normal class follows a strict collection protocol to ensure domain consistency with the NEU scratch images. Surfaces selected are clean steel plates without visible scratches, dents, or corrosion.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Surface Selection</div>
+        <div class="card-body">Clean steel plates without visible scratches, dents, rust spots, or surface contamination. Multiple plates used to capture natural variation in surface texture and finish.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Camera Setup</div>
+        <div class="card-body">Same fixed overhead camera, same approximate distance, same viewing angle as used for any defect image captures. Consistent perspective across both classes.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Lighting Conditions</div>
+        <div class="card-body">Realistic workshop lighting — not studio-controlled. Mirrors real MSME inspection conditions, including minor illumination variation between captures.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Validation</div>
+        <div class="card-body">Each collected image manually verified to confirm absence of any visible defect before inclusion in the No-Defect class. Ambiguous surfaces discarded.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPLEMENTATION STATUS -->
+  <div class="section fade-in fade-in-4">
+    <div class="section-header">
+      <span class="section-num">5.4</span>
       <span class="section-title">Implementation Status</span>
       <span class="section-divider"></span>
     </div>
 
-    <div style="border: 1px solid var(--border); background: var(--surface); padding: 0 24px;">
+    <div class="callout">
+      <strong>Note:</strong> Experimental results will be populated here as implementation progresses. The table below tracks current project status across pipeline stages.
+    </div>
+
+    <div style="border:1px solid var(--border);background:var(--surface);padding:0 24px;">
       <div class="roadmap-item">
         <div class="rm-num">01</div>
-        <div class="rm-phase">Data Setup</div>
-        <div class="rm-desc">NEU dataset downloaded, EDA notebook complete, train/val/test splits defined.</div>
-        <div><span class="status-badge done">✓ Done</span></div>
+        <div class="rm-phase">Dataset Setup</div>
+        <div class="rm-desc">NEU Scratch class downloaded, normal class self-collection in progress.</div>
+        <div><span class="status-badge progress">In Progress</span></div>
       </div>
       <div class="roadmap-item">
         <div class="rm-num">02</div>
         <div class="rm-phase">Preprocessing</div>
-        <div class="rm-desc">Full preprocessing pipeline implemented: Gaussian + CLAHE + bilateral filter + normalization.</div>
+        <div class="rm-desc">Grayscale conversion, CLAHE, Gaussian blur, normalization pipeline implemented.</div>
         <div><span class="status-badge done">✓ Done</span></div>
       </div>
       <div class="roadmap-item">
         <div class="rm-num">03</div>
         <div class="rm-phase">Segmentation</div>
-        <div class="rm-desc">Otsu + morphological ops + connected components with size filtering implemented.</div>
+        <div class="rm-desc">Canny edge detection + morphological ops + candidate region filtering.</div>
         <div><span class="status-badge progress">In Progress</span></div>
       </div>
       <div class="roadmap-item">
         <div class="rm-num">04</div>
         <div class="rm-phase">Feature Extraction</div>
-        <div class="rm-desc">LBP, Gabor, GLCM, shape descriptors, statistical moments + PCA pipeline.</div>
+        <div class="rm-desc">Edge density, orientation stats, HOG, LBP, Gabor + PCA pipeline.</div>
         <div><span class="status-badge progress">In Progress</span></div>
       </div>
       <div class="roadmap-item">
         <div class="rm-num">05</div>
         <div class="rm-phase">Model Training</div>
-        <div class="rm-desc">Training and cross-validating RF, SVM, LDA + Nearest Centroid, k-NN classifiers.</div>
+        <div class="rm-desc">LDA + Nearest Centroid binary classifier on PCA-reduced features.</div>
         <div><span class="status-badge planned">Planned</span></div>
       </div>
       <div class="roadmap-item">
         <div class="rm-num">06</div>
-        <div class="rm-phase">Demo App</div>
-        <div class="rm-desc">Streamlit/Gradio UI for end-to-end inference with segmentation overlay visualization.</div>
+        <div class="rm-phase">Results &amp; Evaluation</div>
+        <div class="rm-desc">Accuracy, Precision, Recall, F1 on held-out test set. Confusion matrix.</div>
         <div><span class="status-badge planned">Planned</span></div>
       </div>
     </div>
@@ -1126,9 +262,7 @@ footer {
 </div>
 
 <footer>
-  <div class="footer-left">
-    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
-  </div>
+  <div class="footer-left">© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</div>
   <div class="footer-right">
     <a href="index.html">Overview</a>
     <a href="architecture.html">Architecture</a>
