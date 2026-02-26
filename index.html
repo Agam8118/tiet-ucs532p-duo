@@ -6,698 +6,79 @@
   <title>Metal Surface Defect Detection — Pixel Duo</title>
   <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --bg:       #0c0d0f;
-  --surface:  #131518;
-  --panel:    #181a1e;
-  --border:   #222428;
-  --border2:  #2c2f35;
-  --amber:    #e8a634;
-  --amber-dim:#7a5414;
-  --steel:    #8eb4c8;
-  --red:      #d95e5e;
-  --green:    #5ec98a;
-  --text:     #d6d9e0;
-  --muted:    #5a5f6e;
-  --muted2:   #3a3f4a;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.7;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Scanline texture */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.06) 2px,
-    rgba(0,0,0,0.06) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* ── NAV ── */
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(12,13,15,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  height: 56px;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.nav-logo {
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid var(--amber);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--amber);
-  letter-spacing: -0.05em;
-}
-
-.nav-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  list-style: none;
-}
-
-.nav-links a {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
-  text-decoration: none;
-  padding: 6px 14px;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-  position: relative;
-}
-
-.nav-links a:hover,
-.nav-links a.active {
-  color: var(--amber);
-}
-
-.nav-links a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 14px;
-  right: 14px;
-  height: 1px;
-  background: var(--amber);
-}
-
-/* ── LAYOUT ── */
-.page-wrap {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 0 32px 80px;
-}
-
-/* ── HERO ── */
-.hero {
-  padding: 80px 0 64px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 64px;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero::before {
-  content: 'DEFECT\ADETECT';
-  white-space: pre;
-  position: absolute;
-  right: -20px;
-  top: 20px;
-  font-family: var(--mono);
-  font-size: 120px;
-  font-weight: 700;
-  line-height: 0.9;
-  color: rgba(232,166,52,0.04);
-  pointer-events: none;
-  letter-spacing: -0.06em;
-  user-select: none;
-}
-
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.eyebrow-line {
-  width: 32px;
-  height: 1px;
-  background: var(--amber);
-}
-
-.eyebrow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--amber);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(232,166,52,0.4); }
-  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(232,166,52,0); }
-}
-
-.hero h1 {
-  font-family: var(--mono);
-  font-size: clamp(28px, 4vw, 48px);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  margin-bottom: 8px;
-  color: #fff;
-}
-
-.hero h1 em {
-  font-style: normal;
-  color: var(--amber);
-}
-
-.hero-sub {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--muted);
-  margin-bottom: 36px;
-  letter-spacing: 0.04em;
-}
-
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 40px;
-}
-
-.tag {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 4px 12px;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.tag.amber { border-color: var(--amber-dim); color: var(--amber); background: rgba(232,166,52,0.06); }
-.tag.steel { border-color: #2a4a5a; color: var(--steel); background: rgba(142,180,200,0.06); }
-.tag.green { border-color: #1e4a32; color: var(--green); background: rgba(94,201,138,0.06); }
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 10px 22px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  cursor: pointer;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--amber);
-  color: #0c0d0f;
-}
-
-.btn-primary:hover {
-  background: #f0b84a;
-  box-shadow: 0 0 24px rgba(232,166,52,0.3);
-}
-
-.btn-ghost {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-}
-
-.btn-ghost:hover {
-  border-color: var(--amber-dim);
-  color: var(--amber);
-}
-
-/* ── STAT ROW ── */
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--border);
-  margin-bottom: 64px;
-  background: var(--surface);
-}
-
-.stat {
-  padding: 24px 28px;
-  border-right: 1px solid var(--border);
-}
-
-.stat:last-child { border-right: none; }
-
-.stat-val {
-  font-family: var(--mono);
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--amber);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-}
-
-/* ── SECTION ── */
-.section { margin-bottom: 64px; }
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 28px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.section-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--amber);
-  letter-spacing: 0.15em;
-}
-
-.section-title {
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.section-divider {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-/* ── GRID CARDS ── */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-}
-
-.card {
-  background: var(--surface);
-  padding: 24px;
-  transition: background 0.2s;
-}
-
-.card:hover { background: var(--panel); }
-
-.card-icon {
-  font-size: 22px;
-  margin-bottom: 12px;
-  display: block;
-}
-
-.card-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--amber);
-  margin-bottom: 8px;
-  letter-spacing: 0.02em;
-}
-
-.card-body {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-/* ── PIPELINE TABLE ── */
-.pipeline {
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.pipeline-row {
-  display: grid;
-  grid-template-columns: 48px 200px 1fr;
-  align-items: start;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.pipeline-row:last-child { border-bottom: none; }
-.pipeline-row:hover { background: var(--panel); }
-
-.pipe-num {
-  padding: 20px 0 20px 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--amber-dim);
-  font-weight: 700;
-}
-
-.pipe-stage {
-  padding: 20px 16px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--amber);
-  border-right: 1px solid var(--border);
-}
-
-.pipe-desc {
-  padding: 20px 24px;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.pipe-desc code {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border2);
-  padding: 1px 6px;
-  color: var(--steel);
-}
-
-/* ── CODE BLOCK ── */
-.code-block {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  padding: 24px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--steel);
-  line-height: 1.7;
-  overflow-x: auto;
-  margin: 20px 0;
-  position: relative;
-}
-
-.code-block::before {
-  content: attr(data-lang);
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 10px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.code-block .kw { color: var(--amber); }
-.code-block .cm { color: var(--muted); font-style: italic; }
-.code-block .fn { color: var(--green); }
-.code-block .st { color: #c9a87c; }
-
-/* ── RESULT TABLE ── */
-.result-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--mono);
-  font-size: 12px;
-  border: 1px solid var(--border);
-}
-
-.result-table thead tr {
-  background: var(--panel);
-  border-bottom: 2px solid var(--amber-dim);
-}
-
-.result-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--amber);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 10px;
-}
-
-.result-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-}
-
-.result-table tr:hover td { background: var(--panel); }
-.result-table td.highlight { color: var(--text); font-weight: 600; }
-.result-table td.best { color: var(--green); font-weight: 700; }
-
-.bar-cell { display: flex; align-items: center; gap: 10px; }
-.bar-bg {
-  height: 6px;
-  background: var(--border2);
-  flex: 1;
-  position: relative;
-}
-.bar-fill {
-  height: 100%;
-  background: var(--amber);
-  transition: width 1s ease;
-}
-.bar-fill.steel { background: var(--steel); }
-.bar-fill.green { background: var(--green); }
-
-/* ── CALLOUT ── */
-.callout {
-  border-left: 3px solid var(--amber);
-  background: rgba(232,166,52,0.05);
-  padding: 16px 20px;
-  margin: 20px 0;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.callout strong { color: var(--amber); font-family: var(--mono); }
-
-/* ── FEATURE GRID ── */
-.feat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-
-.feat-item {
-  background: var(--surface);
-  padding: 20px 22px;
-}
-
-.feat-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--amber);
-  margin-bottom: 6px;
-}
-
-.feat-desc {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-/* ── FOOTER ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 32px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.footer-left {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.footer-left a { color: var(--amber); text-decoration: none; }
-.footer-left a:hover { text-decoration: underline; }
-
-.footer-right {
-  display: flex;
-  gap: 20px;
-}
-
-.footer-right a {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-}
-
-.footer-right a:hover { color: var(--amber); }
-
-/* ── ARCH DIAGRAM ── */
-.arch-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid var(--border);
-}
-
-.arch-node {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.arch-node:last-child { border-bottom: none; }
-.arch-node:hover { background: var(--panel); }
-
-.arch-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0;
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  gap: 4px;
-}
-
-.arch-step-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--amber);
-}
-
-.arch-step-arrow {
-  color: var(--border2);
-  font-size: 14px;
-}
-
-.arch-content {
-  padding: 20px 28px;
-}
-
-.arch-name {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 6px;
-}
-
-.arch-detail {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.arch-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.chip {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 3px 8px;
-  background: var(--panel);
-  border: 1px solid var(--border2);
-  color: var(--steel);
-  letter-spacing: 0.04em;
-}
-
-/* ── ANIMATIONS ── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in { animation: fadeIn 0.6s ease both; }
-.fade-in-1 { animation-delay: 0.1s; }
-.fade-in-2 { animation-delay: 0.2s; }
-.fade-in-3 { animation-delay: 0.3s; }
-.fade-in-4 { animation-delay: 0.4s; }
-.fade-in-5 { animation-delay: 0.5s; }
-.fade-in-6 { animation-delay: 0.6s; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  nav { padding: 0 20px; }
-  .page-wrap { padding: 0 20px 60px; }
-  .stat-row { grid-template-columns: 1fr 1fr; }
-  .stat { border-bottom: 1px solid var(--border); }
-  .feat-grid { grid-template-columns: 1fr; }
-  .pipeline-row { grid-template-columns: 40px 140px 1fr; }
-  .hero::before { display: none; }
-}
-
-</style>
+:root{--bg:#0c0d0f;--surface:#131518;--panel:#181a1e;--border:#222428;--border2:#2c2f35;--amber:#e8a634;--amber-dim:#7a5414;--steel:#8eb4c8;--red:#d95e5e;--green:#5ec98a;--text:#d6d9e0;--muted:#5a5f6e;--muted2:#3a3f4a;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:9999}
+nav{position:sticky;top:0;z-index:100;background:rgba(12,13,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:56px}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{width:28px;height:28px;border:1.5px solid var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:-.05em}
+.nav-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;letter-spacing:.04em;transition:color .2s;position:relative}
+.nav-links a:hover,.nav-links a.active{color:var(--amber)}
+.nav-links a.active::after{content:'';position:absolute;bottom:-1px;left:14px;right:14px;height:1px;background:var(--amber)}
+.page-wrap{max-width:1060px;margin:0 auto;padding:0 32px 80px}
+.hero{padding:80px 0 64px;border-bottom:1px solid var(--border);margin-bottom:64px;position:relative;overflow:hidden}
+.hero::before{content:'DEFECT\ADETECT';white-space:pre;position:absolute;right:-20px;top:20px;font-family:var(--mono);font-size:120px;font-weight:700;line-height:.9;color:rgba(232,166,52,.04);pointer-events:none;letter-spacing:-.06em;user-select:none}
+.hero-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:24px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.eyebrow-line{width:32px;height:1px;background:var(--amber)}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(232,166,52,.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(232,166,52,0)}}
+.hero h1{font-family:var(--mono);font-size:clamp(28px,4vw,48px);font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#fff}
+.hero h1 em{font-style:normal;color:var(--amber)}
+.hero-sub{font-family:var(--mono);font-size:14px;color:var(--muted);margin-bottom:36px;letter-spacing:.04em}
+.hero-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px}
+.tag{font-family:var(--mono);font-size:11px;padding:4px 12px;border:1px solid var(--border2);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.tag.amber{border-color:var(--amber-dim);color:var(--amber);background:rgba(232,166,52,.06)}
+.tag.steel{border-color:#2a4a5a;color:var(--steel);background:rgba(142,180,200,.06)}
+.tag.green{border-color:#1e4a32;color:var(--green);background:rgba(94,201,138,.06)}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:12px;font-weight:600;padding:10px 22px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;letter-spacing:.06em;text-transform:uppercase;transition:all .2s;cursor:pointer;border:none}
+.btn-primary{background:var(--amber);color:#0c0d0f}
+.btn-primary:hover{background:#f0b84a;box-shadow:0 0 24px rgba(232,166,52,.3)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--amber-dim);color:var(--amber)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);margin-bottom:64px;background:var(--surface)}
+.stat{padding:24px 28px;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-val{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--amber);letter-spacing:-.04em;line-height:1;margin-bottom:6px}
+.stat-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.section{margin-bottom:64px}
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.section-num{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.15em}
+.section-title{font-family:var(--mono);font-size:18px;font-weight:600;color:#fff;letter-spacing:-.01em}
+.section-divider{flex:1;height:1px;background:var(--border)}
+.prose{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:20px}
+.prose+.prose{margin-top:0}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border)}
+.card{background:var(--surface);padding:24px;transition:background .2s}
+.card:hover{background:var(--panel)}
+.card-icon{font-size:22px;margin-bottom:12px;display:block}
+.card-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);margin-bottom:8px;letter-spacing:.02em}
+.card-body{font-size:13px;color:var(--muted);line-height:1.6}
+.callout{border-left:3px solid var(--amber);background:rgba(232,166,52,.05);padding:16px 20px;margin:20px 0;font-size:13px;color:var(--muted);line-height:1.6}
+.callout strong{color:var(--amber);font-family:var(--mono)}
+.pipeline{border:1px solid var(--border);background:var(--surface)}
+.pipeline-row{display:grid;grid-template-columns:48px 200px 1fr;align-items:start;border-bottom:1px solid var(--border);transition:background .2s}
+.pipeline-row:last-child{border-bottom:none}
+.pipeline-row:hover{background:var(--panel)}
+.pipe-num{padding:20px 0 20px 20px;font-family:var(--mono);font-size:11px;color:var(--amber-dim);font-weight:700}
+.pipe-stage{padding:20px 16px;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);border-right:1px solid var(--border)}
+.pipe-desc{padding:20px 24px;font-size:13px;color:var(--muted);line-height:1.6}
+.pipe-desc code{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--border2);padding:1px 6px;color:var(--steel)}
+footer{border-top:1px solid var(--border);padding:32px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-left{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.footer-left a{color:var(--amber);text-decoration:none}
+.footer-right{display:flex;gap:20px}
+.footer-right a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.footer-right a:hover{color:var(--amber)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .6s ease both}
+.fade-in-1{animation-delay:.1s}.fade-in-2{animation-delay:.2s}.fade-in-3{animation-delay:.3s}.fade-in-4{animation-delay:.4s}.fade-in-5{animation-delay:.5s}.fade-in-6{animation-delay:.6s}
+@media(max-width:768px){nav{padding:0 20px}.page-wrap{padding:0 20px 60px}.stat-row{grid-template-columns:1fr 1fr}.stat{border-bottom:1px solid var(--border)}.pipeline-row{grid-template-columns:40px 130px 1fr}.hero::before{display:none}}
+  </style>
 </head>
 <body>
 
@@ -725,31 +106,31 @@ footer {
       <span>UCS532P · Computer Vision · TIET</span>
     </div>
     <h1>Metal Surface<br><em>Defect Detection</em></h1>
-    <p class="hero-sub">A Unified Classical Computer Vision Framework for Industrial Surface Inspection</p>
+    <p class="hero-sub">A low-cost classical computer vision system for scratch detection in MSME metal workshops</p>
     <div class="hero-tags">
       <span class="tag amber">Classical CV Only</span>
       <span class="tag amber">No Deep Learning</span>
-      <span class="tag steel">LBP · Gabor · HOG · GLCM</span>
-      <span class="tag steel">SVM · Random Forest · LDA</span>
+      <span class="tag steel">Canny · LBP · HOG · Gabor</span>
+      <span class="tag steel">PCA · LDA · Nearest Centroid</span>
       <span class="tag green">CPU Inference</span>
-      <span class="tag">NEU Dataset</span>
+      <span class="tag">NEU + Self-collected Dataset</span>
     </div>
     <div class="hero-actions">
-      <a href="architecture.html" class="btn btn-primary">View Architecture →</a>
+      <a href="methodology.html" class="btn btn-primary">View Methodology →</a>
       <a href="https://github.com/Agam8118/tiet-ucs532p-duo" class="btn btn-ghost" target="_blank">↗ Source Code</a>
-      <a href="results.html" class="btn btn-ghost">Results</a>
+      <a href="results.html" class="btn btn-ghost">Dataset & Results</a>
     </div>
   </div>
 
-  <!-- STAT ROW -->
+  <!-- STATS -->
   <div class="stat-row fade-in fade-in-1">
     <div class="stat">
-      <div class="stat-val">6</div>
-      <div class="stat-label">Defect Classes</div>
+      <div class="stat-val">2</div>
+      <div class="stat-label">Classes (Scratch / No-Defect)</div>
     </div>
     <div class="stat">
-      <div class="stat-val">1800</div>
-      <div class="stat-label">Training Images</div>
+      <div class="stat-val">NEU</div>
+      <div class="stat-label">+ Self-collected Dataset</div>
     </div>
     <div class="stat">
       <div class="stat-val">5</div>
@@ -761,172 +142,139 @@ footer {
     </div>
   </div>
 
-  <!-- MOTIVATION -->
+  <!-- INTRODUCTION -->
   <div class="section fade-in fade-in-2">
     <div class="section-header">
-      <span class="section-num">01</span>
-      <span class="section-title">Industrial Motivation</span>
+      <span class="section-num">§1</span>
+      <span class="section-title">Introduction</span>
       <span class="section-divider"></span>
     </div>
 
+    <p class="prose">Small and Medium Scale Manufacturing Enterprises (MSMEs) form the backbone of metal manufacturing in regions such as Punjab, Haryana, and Rajasthan. These units commonly produce sheet-metal components, brackets, plates, and fabricated parts for automotive, agricultural, and general engineering applications. Surface quality of these components is a critical factor — visible defects such as scratches significantly reduce product value and may lead to rejection by downstream manufacturers.</p>
+
+    <p class="prose">In most MSME metal workshops, surface inspection is still performed manually by human operators. This process is subjective, inconsistent across shifts, and prone to errors due to fatigue, poor lighting conditions, and high production pressure. Minor defects such as scratches are often missed, while acceptable parts may be unnecessarily rejected, resulting in material wastage and increased production cost.</p>
+
+    <p class="prose">Large-scale industries address this problem using Automated Optical Inspection (AOI) systems, which rely on specialized hardware, multi-camera setups, and sophisticated sensing technologies. However, such systems are prohibitively expensive and operationally complex for MSMEs. As a result, there exists a significant gap between the inspection capabilities of large industries and small manufacturing units.</p>
+
     <div class="callout">
-      <strong>Context:</strong> MSMEs across Punjab — in auto parts manufacturing hubs like Ludhiana and textile centres — continue to rely heavily on <strong>manual visual inspection</strong>, leading to high defect escape rates, fatigue-driven inconsistency, and costly late-stage rejections.
+      <strong>Project Goal:</strong> Bridge this gap by developing a low-cost, camera-based surface defect screening system using classical computer vision techniques — focusing on detecting surface scratches under real-world MSME constraints such as limited data, variable lighting, and minimal infrastructure.
     </div>
 
     <div class="card-grid">
       <div class="card">
         <span class="card-icon">😴</span>
         <div class="card-title">Human Fatigue</div>
-        <div class="card-body">Inspectors experience sharply decreased accuracy over long production shifts, causing systematic missed detections that compound over time.</div>
+        <div class="card-body">Inspectors experience sharply decreased accuracy over long production shifts, causing systematic missed scratch detections that compound over time.</div>
       </div>
       <div class="card">
         <span class="card-icon">⚖️</span>
         <div class="card-title">Inconsistent Detection</div>
-        <div class="card-body">Subjective judgments vary between individual inspectors and across different shifts, making quality control non-reproducible.</div>
+        <div class="card-body">Subjective judgments vary between individual inspectors and across shifts, making scratch detection non-reproducible and unreliable.</div>
       </div>
       <div class="card">
         <span class="card-icon">💸</span>
-        <div class="card-title">Late-stage Rejections</div>
+        <div class="card-title">Costly Late-stage Rejections</div>
         <div class="card-body">Defects discovered at assembly or shipping stages cause expensive rework, material waste, and customer dissatisfaction.</div>
       </div>
       <div class="card">
         <span class="card-icon">🏭</span>
         <div class="card-title">MSME Constraints</div>
-        <div class="card-body">Small manufacturers cannot afford GPU hardware or deep learning infrastructure — they need classical, CPU-deployable solutions.</div>
+        <div class="card-body">Small workshops cannot afford AOI systems or GPU hardware — the solution must work on standard cameras with CPU-only inference.</div>
       </div>
     </div>
   </div>
 
-  <!-- TARGET DEFECTS -->
+  <!-- PROBLEM STATEMENT -->
   <div class="section fade-in fade-in-3">
     <div class="section-header">
-      <span class="section-num">02</span>
-      <span class="section-title">Target Defect Classes</span>
+      <span class="section-num">§2</span>
+      <span class="section-title">Problem Statement</span>
       <span class="section-divider"></span>
+    </div>
+
+    <div class="callout">
+      Manual inspection of metal surfaces in small-scale manufacturing units is unreliable and inconsistent, leading to undetected surface scratches and quality degradation. Existing automated inspection systems are expensive and impractical for MSMEs. The problem addressed in this project is the development of a <strong>low-cost, classical computer vision–based system</strong> capable of detecting surface scratches on metal components using standard camera images, thereby enabling early-stage defect screening suitable for MSME environments.
     </div>
 
     <div class="pipeline">
       <div class="pipeline-row">
-        <div class="pipe-num">01</div>
-        <div class="pipe-stage">Scratches</div>
-        <div class="pipe-desc">Linear surface abrasions caused by contact with abrasive materials during handling or machining. Appear as elongated bright streaks in grayscale imagery.</div>
+        <div class="pipe-num">IN</div>
+        <div class="pipe-stage">Input</div>
+        <div class="pipe-desc">Standard RGB camera images of metal component surfaces captured under workshop conditions — no specialized imaging hardware required.</div>
       </div>
       <div class="pipeline-row">
-        <div class="pipe-num">02</div>
-        <div class="pipe-stage">Rolled-in Scale</div>
-        <div class="pipe-desc">Oxide scale pressed into the metal surface during hot rolling, visible as irregular dark patches with distinct texture contrast against base metal.</div>
+        <div class="pipe-num">OUT</div>
+        <div class="pipe-stage">Output</div>
+        <div class="pipe-desc">Binary classification: <code>Scratch</code> or <code>No-Defect</code>, with visual highlighting of the detected defect region on the input image.</div>
       </div>
       <div class="pipeline-row">
-        <div class="pipe-num">03</div>
-        <div class="pipe-stage">Pitting</div>
-        <div class="pipe-desc">Small localized depressions or cavities on the surface caused by corrosion or mechanical impacts. Detected via circular shape descriptors and intensity dips.</div>
+        <div class="pipe-num">CON</div>
+        <div class="pipe-stage">Constraints</div>
+        <div class="pipe-desc">Classical computer vision algorithms only — no deep learning. CPU-based inference. Suitable for limited labeled datasets (100–500 samples per class).</div>
       </div>
       <div class="pipeline-row">
-        <div class="pipe-num">04</div>
-        <div class="pipe-stage">Inclusion</div>
-        <div class="pipe-desc">Non-metallic foreign particles embedded in the steel matrix, appearing as irregular dark regions with high local texture contrast.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num">05</div>
-        <div class="pipe-stage">Patches</div>
-        <div class="pipe-desc">Irregularly shaped surface regions with different reflectivity from the surrounding base metal, often caused by uneven cooling or coating defects.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num">06</div>
-        <div class="pipe-stage">Crazing</div>
-        <div class="pipe-desc">Network of fine surface cracks forming a craze pattern. Distinguished from scratches by their branching, non-linear morphology and dense clustering.</div>
+        <div class="pipe-num">TGT</div>
+        <div class="pipe-stage">Target Users</div>
+        <div class="pipe-desc">MSME metal workshops in Punjab, Haryana, Rajasthan producing sheet metal, brackets, and fabricated parts for automotive and agricultural markets.</div>
       </div>
     </div>
   </div>
 
-  <!-- SYSTEM PIPELINE -->
+  <!-- LITERATURE REVIEW -->
   <div class="section fade-in fade-in-4">
     <div class="section-header">
-      <span class="section-num">03</span>
-      <span class="section-title">System Pipeline Overview</span>
+      <span class="section-num">§3</span>
+      <span class="section-title">Literature Review</span>
       <span class="section-divider"></span>
     </div>
 
-    <div class="pipeline">
-      <div class="pipeline-row">
-        <div class="pipe-num">S1</div>
-        <div class="pipe-stage">Image Acquisition</div>
-        <div class="pipe-desc">High-res capture at ≥2048×2048px under controlled 45° LED lighting to minimize specular reflection. Source: <code>NEU Metal Surface Dataset</code> (6 classes × 300 images).</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num">S2</div>
-        <div class="pipe-stage">Preprocessing</div>
-        <div class="pipe-desc"><code>Gaussian blur</code> → <code>CLAHE</code> contrast enhancement → <code>Bilateral filter</code> (edge-preserving) → intensity normalization to [0,1].</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num">S3</div>
-        <div class="pipe-stage">Segmentation</div>
-        <div class="pipe-desc"><code>Otsu thresholding</code> + morphological <code>opening/closing</code> → <code>connected component analysis</code> filtering regions &lt;50px².</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num">S4</div>
-        <div class="pipe-stage">Feature Extraction</div>
-        <div class="pipe-desc"><code>LBP</code> texture histograms + <code>Gabor</code> filter bank (4 orientations, 3 scales) + <code>GLCM</code> + shape descriptors + statistical moments → <code>PCA</code> to 20–30 components.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num">S5</div>
-        <div class="pipe-stage">Classification</div>
-        <div class="pipe-desc"><code>LDA</code> + Nearest Centroid (primary), <code>Random Forest</code>, <code>SVM-RBF</code> ensemble — outputs class label + confidence score.</div>
-      </div>
+    <p class="prose">Surface defect detection has been extensively studied in large-scale industrial manufacturing. High-end AOI systems deployed in steel rolling mills, automotive stamping units, and electronics manufacturing use laser scanning, structured light, near-infrared imaging, or deep learning–based vision models to achieve micron-level precision and high-speed inspection. While effective, such solutions require controlled environments, expensive hardware, and skilled maintenance personnel — making them unsuitable for small-scale workshops.</p>
+
+    <p class="prose">Earlier research relied heavily on classical techniques including edge detection, texture analysis, and statistical pattern recognition. Methods based on Canny edge detection, Gabor filters, Local Binary Patterns (LBP), and Histogram of Oriented Gradients (HOG) were commonly used for detecting scratches, cracks, and texture anomalies on metal surfaces. Dimensionality reduction and classification were typically performed using PCA, LDA, or distance-based classifiers.</p>
+
+    <div class="callout">
+      <strong>Gap identified:</strong> Despite the availability of advanced inspection technologies, there is limited work focusing on affordable, explainable, and lightweight defect screening systems tailored specifically for small-scale metal manufacturing units. The NEU Surface Defect Dataset contains only defective samples, without defect-free reference images — further motivating the need for a self-collected normal class. This project builds upon classical CV principles to address this gap directly.
     </div>
 
-    <div style="margin-top:16px; text-align:right;">
-      <a href="architecture.html" class="btn btn-ghost" style="display:inline-flex;">Full architecture detail →</a>
-    </div>
-  </div>
-
-  <!-- WHY CLASSICAL -->
-  <div class="section fade-in fade-in-5">
-    <div class="section-header">
-      <span class="section-num">04</span>
-      <span class="section-title">Why Classical ML — Not Deep Learning</span>
-      <span class="section-divider"></span>
-    </div>
-
-    <div class="feat-grid">
-      <div class="feat-item">
-        <div class="feat-label">Small Dataset Suitability</div>
-        <div class="feat-desc">MSMEs typically have 100–500 labeled samples per defect class. Classical models generalize well without requiring thousands of annotated images.</div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Canny Edge Detection</div>
+        <div class="card-body">Widely used for detecting linear discontinuities on surfaces. Highlights scratch patterns as elongated edge clusters, forming the basis for scratch-specific segmentation.</div>
       </div>
-      <div class="feat-item">
-        <div class="feat-label">Interpretability</div>
-        <div class="feat-desc">Quality assurance teams need to understand why a part was rejected. Feature importance rankings and LDA projections provide transparent explanations.</div>
+      <div class="card">
+        <div class="card-title">Gabor Filters</div>
+        <div class="card-body">Multi-orientation texture filters effective for detecting directional patterns. Scratches at any orientation can be captured by a well-designed Gabor filter bank.</div>
       </div>
-      <div class="feat-item">
-        <div class="feat-label">Hardware Independence</div>
-        <div class="feat-desc">Entire inference pipeline runs on standard CPU hardware. No GPU, no CUDA, no cloud dependency — deployable on any inspection station.</div>
+      <div class="card">
+        <div class="card-title">LBP & HOG</div>
+        <div class="card-body">Rotation-invariant texture and gradient-based descriptors proven effective for surface anomaly characterization without requiring large training sets.</div>
       </div>
-      <div class="feat-item">
-        <div class="feat-label">Fast Inference</div>
-        <div class="feat-desc">Classical feature extraction + nearest centroid classification achieves sub-100ms inference per image — suitable for production line integration.</div>
+      <div class="card">
+        <div class="card-title">PCA + LDA</div>
+        <div class="card-body">Dimensionality reduction and discriminative projection methods that generalize well on small labeled datasets — a key advantage over deep learning in MSME settings.</div>
       </div>
     </div>
   </div>
 
   <!-- TEAM -->
-  <div class="section fade-in fade-in-6">
+  <div class="section fade-in fade-in-5">
     <div class="section-header">
-      <span class="section-num">05</span>
-      <span class="section-title">Team & Course</span>
+      <span class="section-num">§4</span>
+      <span class="section-title">Team</span>
       <span class="section-divider"></span>
     </div>
     <div class="card-grid" style="grid-template-columns: repeat(3, 1fr);">
       <div class="card">
         <div class="card-title">Agampreet Singh</div>
-        <div class="card-body" style="font-family: var(--mono); font-size: 12px; color: var(--muted);">102323003</div>
+        <div class="card-body" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">Roll No. 102323003</div>
       </div>
       <div class="card">
         <div class="card-title">Vansh Chambyal</div>
-        <div class="card-body" style="font-family: var(--mono); font-size: 12px; color: var(--muted);">102323005</div>
+        <div class="card-body" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">Roll No. 102323005</div>
       </div>
       <div class="card">
         <div class="card-title">Dr. Raghav B. Venkataramaiyer</div>
-        <div class="card-body" style="font-family: var(--mono); font-size: 12px; color: var(--muted);">Instructor · UCS532P</div>
+        <div class="card-body" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">Instructor · UCS532P · TIET</div>
       </div>
     </div>
   </div>
@@ -934,9 +282,7 @@ footer {
 </div>
 
 <footer>
-  <div class="footer-left">
-    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
-  </div>
+  <div class="footer-left">© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</div>
   <div class="footer-right">
     <a href="architecture.html">Architecture</a>
     <a href="methodology.html">Methodology</a>
