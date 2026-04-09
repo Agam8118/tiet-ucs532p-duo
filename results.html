@@ -1,269 +1,518 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dataset & Results — Metal Surface Defect Detection</title>
-  <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-:root{--bg:#0c0d0f;--surface:#131518;--panel:#181a1e;--border:#222428;--border2:#2c2f35;--amber:#e8a634;--amber-dim:#7a5414;--steel:#8eb4c8;--red:#d95e5e;--green:#5ec98a;--text:#d6d9e0;--muted:#5a5f6e;--muted2:#3a3f4a;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;min-height:100vh;overflow-x:hidden}
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:9999}
-nav{position:sticky;top:0;z-index:100;background:rgba(12,13,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:56px}
-.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
-.nav-logo{width:28px;height:28px;border:1.5px solid var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:-.05em}
-.nav-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
-.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
-.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;letter-spacing:.04em;transition:color .2s;position:relative}
-.nav-links a:hover,.nav-links a.active{color:var(--amber)}
-.nav-links a.active::after{content:'';position:absolute;bottom:-1px;left:14px;right:14px;height:1px;background:var(--amber)}
-.page-wrap{max-width:1060px;margin:0 auto;padding:0 32px 80px}
-.hero{padding:80px 0 48px;border-bottom:1px solid var(--border);margin-bottom:64px;position:relative;overflow:hidden}
-.hero-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:24px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
-.eyebrow-line{width:32px;height:1px;background:var(--amber)}
-.hero h1{font-family:var(--mono);font-size:clamp(28px,4vw,48px);font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#fff}
-.hero h1 em{font-style:normal;color:var(--amber)}
-.hero-sub{font-family:var(--mono);font-size:14px;color:var(--muted);letter-spacing:.04em}
-.section{margin-bottom:64px}
-.section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)}
-.section-num{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.15em}
-.section-title{font-family:var(--mono);font-size:18px;font-weight:600;color:#fff;letter-spacing:-.01em}
-.section-divider{flex:1;height:1px;background:var(--border)}
-.prose{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:20px}
-.callout{border-left:3px solid var(--amber);background:rgba(232,166,52,.05);padding:16px 20px;margin:20px 0;font-size:13px;color:var(--muted);line-height:1.6}
-.callout strong{color:var(--amber);font-family:var(--mono)}
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border)}
-.card{background:var(--surface);padding:24px;transition:background .2s}
-.card:hover{background:var(--panel)}
-.card-icon{font-size:22px;margin-bottom:12px;display:block}
-.card-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);margin-bottom:8px;letter-spacing:.02em}
-.card-body{font-size:13px;color:var(--muted);line-height:1.6}
-.pipeline{border:1px solid var(--border);background:var(--surface)}
-.pipeline-row{display:grid;grid-template-columns:48px 200px 1fr;align-items:start;border-bottom:1px solid var(--border);transition:background .2s}
-.pipeline-row:last-child{border-bottom:none}
-.pipeline-row:hover{background:var(--panel)}
-.pipe-num{padding:20px 0 20px 20px;font-family:var(--mono);font-size:11px;color:var(--amber-dim);font-weight:700}
-.pipe-stage{padding:20px 16px;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);border-right:1px solid var(--border)}
-.pipe-desc{padding:20px 24px;font-size:13px;color:var(--muted);line-height:1.6}
-.pipe-desc code{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--border2);padding:1px 6px;color:var(--steel)}
-.result-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;border:1px solid var(--border)}
-.result-table thead tr{background:var(--panel);border-bottom:2px solid var(--amber-dim)}
-.result-table th{padding:12px 16px;text-align:left;font-weight:600;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;font-size:10px}
-.result-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--muted)}
-.result-table tr:hover td{background:var(--panel)}
-.result-table td.highlight{color:var(--text);font-weight:600}
-.result-table td.best{color:var(--green);font-weight:700}
-.status-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:4px 12px;border:1px solid}
-.status-badge.planned{border-color:var(--border2);color:var(--muted)}
-.status-badge.progress{border-color:var(--amber-dim);color:var(--amber);background:rgba(232,166,52,.06)}
-.status-badge.done{border-color:#1e4a32;color:var(--green);background:rgba(94,201,138,.06)}
-.roadmap-item{display:grid;grid-template-columns:28px 180px 1fr 120px;align-items:start;padding:16px 0;border-bottom:1px solid var(--border);gap:16px}
-.roadmap-item:last-child{border-bottom:none}
-.rm-num{font-family:var(--mono);font-size:11px;color:var(--muted2)}
-.rm-phase{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
-.rm-desc{font-size:13px;color:var(--muted);line-height:1.5}
-.class-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:20px}
-.class-card{background:var(--surface);padding:28px}
-.class-label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
-.class-label.c0{color:var(--green)}
-.class-label.c1{color:var(--amber)}
-.class-num{font-family:var(--mono);font-size:40px;font-weight:700;line-height:1;margin-bottom:8px}
-.class-num.c0{color:var(--green)}
-.class-num.c1{color:var(--amber)}
-.class-desc{font-size:13px;color:var(--muted);line-height:1.6}
-footer{border-top:1px solid var(--border);padding:32px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.footer-left{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.footer-left a{color:var(--amber);text-decoration:none}
-.footer-right{display:flex;gap:20px}
-.footer-right a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:.04em;transition:color .2s}
-.footer-right a:hover{color:var(--amber)}
-@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.fade-in{animation:fadeIn .6s ease both}
-.fade-in-1{animation-delay:.1s}.fade-in-2{animation-delay:.2s}.fade-in-3{animation-delay:.3s}.fade-in-4{animation-delay:.4s}.fade-in-5{animation-delay:.5s}
-@media(max-width:768px){nav{padding:0 20px}.page-wrap{padding:0 20px 60px}.class-row{grid-template-columns:1fr}.pipeline-row{grid-template-columns:40px 130px 1fr}.roadmap-item{grid-template-columns:1fr}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dataset Description & Benchmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141418;
+    --surface2: #1a1a20;
+    --border: #2a2a35;
+    --accent: #e8a832;
+    --accent2: #5b8def;
+    --text: #e8e6e0;
+    --muted: #7a7870;
+    --code-bg: #0a0a0c;
+    --good: #4caf7d;
+    --warn: #e8a832;
+    --bad: #e05555;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,13,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 2rem;
+    padding: 0 2.5rem; height: 52px;
+  }
+  .nav-brand {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); text-decoration: none;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .nav-brand span { color: var(--muted); }
+  nav a:not(.nav-brand) {
+    font-size: 12px; color: var(--muted); text-decoration: none;
+    letter-spacing: 0.04em; transition: color 0.2s;
+  }
+  nav a:not(.nav-brand):hover { color: var(--text); }
+  nav a.active { color: var(--text); }
+
+  .hero { padding: 5rem 2.5rem 3rem; max-width: 860px; margin: 0 auto; }
+  .section-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 300; line-height: 1.15;
+    color: var(--text); margin-bottom: 1rem;
+  }
+  h1 em { color: var(--accent); font-style: italic; }
+  .hero-sub { color: var(--muted); max-width: 560px; font-size: 14px; }
+
+  .content { max-width: 860px; margin: 0 auto; padding: 0 2.5rem 6rem; }
+  .section-block { margin-bottom: 4rem; }
+  .section-header {
+    display: flex; align-items: baseline; gap: 1.2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem; margin-bottom: 2rem;
+  }
+  .section-num {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--accent); letter-spacing: 0.1em;
+  }
+  h2 {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 1.35rem; color: var(--text);
+  }
+
+  /* STAT CARDS */
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem; margin: 1.5rem 0;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.4rem 1.2rem; text-align: center;
+  }
+  .stat-card .num {
+    font-family: 'Fraunces', serif; font-size: 2.4rem;
+    font-weight: 300; color: var(--accent); line-height: 1.1;
+  }
+  .stat-card .label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-top: 0.4rem;
+  }
+
+  /* CONFUSION MATRIX */
+  .conf-matrix-wrap {
+    display: flex; justify-content: center; margin: 1.5rem 0;
+  }
+  .conf-matrix {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.8rem 2rem;
+    font-family: 'DM Mono', monospace; font-size: 13px;
+  }
+  .conf-matrix .matrix-title {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 1.2rem; text-align: center;
+  }
+  .conf-matrix table { border-collapse: separate; border-spacing: 6px; }
+  .conf-matrix th {
+    font-size: 10px; color: var(--muted); letter-spacing: 0.06em;
+    padding: 0.3rem 0.5rem;
+  }
+  .conf-matrix td {
+    width: 64px; height: 64px; text-align: center; vertical-align: middle;
+    border-radius: 3px; font-size: 1.4rem; font-weight: 500;
+  }
+  .cm-tp { background: rgba(76,175,125,0.25); color: var(--good); border: 1px solid rgba(76,175,125,0.4); }
+  .cm-tn { background: rgba(76,175,125,0.15); color: var(--good); border: 1px solid rgba(76,175,125,0.3); }
+  .cm-fp { background: rgba(224,85,85,0.08); color: rgba(224,85,85,0.5); border: 1px solid rgba(224,85,85,0.2); }
+  .cm-fn { background: rgba(224,85,85,0.15); color: var(--bad); border: 1px solid rgba(224,85,85,0.35); }
+
+  /* CLASSIFICATION REPORT TABLE */
+  .report-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+  .report-table th {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .report-table td {
+    padding: 0.7rem 1rem; font-size: 13.5px;
+    border-bottom: 1px solid rgba(42,42,53,0.5);
+    font-family: 'DM Mono', monospace;
+  }
+  .report-table td:first-child { color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .report-table .highlight { color: var(--good); }
+  .report-table tr.total-row td { border-top: 1px solid var(--border); color: var(--accent); }
+
+  /* PHASE STATUS */
+  .phase-list { display: flex; flex-direction: column; gap: 0.8rem; margin: 1.2rem 0; }
+  .phase-item {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 0.9rem 1.2rem;
+  }
+  .phase-num {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--muted); min-width: 28px;
+  }
+  .phase-title { flex: 1; font-size: 13.5px; font-weight: 400; }
+  .phase-desc { flex: 2; font-size: 12.5px; color: var(--muted); }
+  .badge {
+    font-family: 'DM Mono', monospace; font-size: 9px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 2px;
+  }
+  .badge-done { background: rgba(76,175,125,0.15); color: var(--good); border: 1px solid rgba(76,175,125,0.3); }
+  .badge-progress { background: rgba(232,168,50,0.12); color: var(--warn); border: 1px solid rgba(232,168,50,0.3); }
+  .badge-planned { background: rgba(42,42,53,0.8); color: var(--muted); border: 1px solid var(--border); }
+
+  /* DATASET CLASSES */
+  .class-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.2rem 0;
+  }
+  .class-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.4rem;
+  }
+  .class-card .class-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 0.6rem;
+  }
+  .class-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 0.5rem; }
+  .class-card p { font-size: 13px; color: var(--muted); }
+  .class-card .count {
+    font-family: 'Fraunces', serif; font-size: 1.8rem;
+    color: var(--text); margin-bottom: 0.3rem;
+  }
+
+  .bar-wrap { margin: 0.5rem 0; }
+  .bar-label {
+    display: flex; justify-content: space-between;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .bar-good { background: var(--good); }
+  .bar-bad { background: var(--accent); }
+
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.4rem 1.6rem;
+    overflow-x: auto; margin: 1.2rem 0;
+  }
+  code {
+    font-family: 'DM Mono', monospace; font-size: 12.5px;
+    color: #c8d8e8; line-height: 1.8;
+  }
+
+  .warn-note {
+    background: rgba(232,168,50,0.07);
+    border: 1px solid rgba(232,168,50,0.25);
+    border-radius: 4px; padding: 1rem 1.2rem;
+    font-size: 13px; color: #e8c87a; margin: 1rem 0;
+  }
+  .note {
+    background: rgba(91,141,239,0.07);
+    border: 1px solid rgba(91,141,239,0.25);
+    border-radius: 4px; padding: 1rem 1.2rem;
+    font-size: 13px; color: #9ab8e8; margin: 1rem 0;
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--muted); letter-spacing: 0.06em;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  .footer-links { display: flex; gap: 1.5rem; }
+</style>
 </head>
 <body>
 
 <nav>
-  <a href="index.html" class="nav-brand">
-    <div class="nav-logo">CV</div>
-    <span class="nav-title">MSDD · Pixel Duo</span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="index.html">Overview</a></li>
-    <li><a href="architecture.html">Architecture</a></li>
-    <li><a href="methodology.html">Methodology</a></li>
-    <li><a href="results.html" class="active">Results</a></li>
-    <li><a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a></li>
-  </ul>
+  <a class="nav-brand" href="index.html"><span>CV</span> MSDD · Pixel Duo</a>
+  <a href="index.html">Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="methodology.html">Methodology</a>
+  <a href="results.html" class="active">Results</a>
+  <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a>
 </nav>
 
-<div class="page-wrap">
+<div class="hero">
+  <div class="section-tag">§5 — Dataset &amp; Results</div>
+  <h1>Dataset Description <em>&amp; Benchmarks</em></h1>
+  <p class="hero-sub">314-image binary dataset combining NEU Scratch samples with self-collected Good surfaces. SVM achieves <strong>98% accuracy</strong> with only 1 misclassification on 63 test samples.</p>
+</div>
 
-  <div class="hero fade-in">
-    <div class="hero-eyebrow">
-      <span class="eyebrow-line"></span>
-      <span>§5 — Dataset &amp; Results</span>
+<div class="content">
+
+  <!-- HEADLINE STATS -->
+  <div class="section-block">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="num">314</div>
+        <div class="label">Total Samples</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">98%</div>
+        <div class="label">Test Accuracy</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">1</div>
+        <div class="label">Misclassifications</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">63</div>
+        <div class="label">Test Set Size</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">4D</div>
+        <div class="label">Feature Vector</div>
+      </div>
     </div>
-    <h1>Dataset Description<br><em>&amp; Benchmarks</em></h1>
-    <p class="hero-sub">Two-class dataset combining the NEU Surface Defect Dataset (Scratch class) with self-collected No-Defect images.</p>
   </div>
 
   <!-- DATASET OVERVIEW -->
-  <div class="section fade-in fade-in-1">
+  <div class="section-block">
     <div class="section-header">
       <span class="section-num">5.1</span>
-      <span class="section-title">Dataset Overview</span>
-      <span class="section-divider"></span>
+      <h2>Dataset Overview</h2>
     </div>
+    <p style="color:var(--muted);margin-bottom:1.5rem;">Binary classification dataset: <strong>Good (No-Defect)</strong> vs <strong>Defective (Scratch)</strong>. Class imbalance reflects real-world production conditions — defective parts are significantly more common in inspection batches.</p>
 
-    <p class="prose">The dataset used in this project consists of two classes: <strong style="color:var(--amber)">Scratch (Defect)</strong> and <strong style="color:var(--green)">No-Defect (Normal)</strong>. This binary construction directly reflects the practical MSME inspection scenario — a production line system needs to answer one question: is this part defective or not?</p>
-
-    <div class="class-row">
+    <div class="class-grid">
       <div class="class-card">
-        <div class="class-label c1">Class 1 — Scratch (Defect)</div>
-        <div class="class-num c1">NEU</div>
-        <div class="class-desc">Images sourced from the <strong style="color:var(--text)">NEU Surface Defect Dataset</strong> — a publicly available benchmark containing labeled steel surface defect images. Only the <strong style="color:var(--amber)">Scratches (Sc)</strong> class is used. These images represent real industrial steel surfaces with visible scratch defects captured under controlled imaging conditions.</div>
+        <div class="class-label">Class 0 — Good</div>
+        <div class="count">74</div>
+        <h3>No-Defect (Self-collected)</h3>
+        <p>Clean steel surface images captured using the same camera setup as the defective samples. Manually verified — ambiguous surfaces discarded.</p>
+        <div class="bar-wrap" style="margin-top:1rem;">
+          <div class="bar-label"><span>Share of dataset</span><span>23.6%</span></div>
+          <div class="bar"><div class="bar-fill bar-good" style="width:23.6%"></div></div>
+        </div>
       </div>
       <div class="class-card">
-        <div class="class-label c0">Class 0 — No-Defect (Normal)</div>
-        <div class="class-num c0">Self</div>
-        <div class="class-desc">Since the NEU dataset contains <strong style="color:var(--text)">only defective samples</strong>, defect-free metal surface images are <strong style="color:var(--green)">self-collected</strong> to form the normal class. Captured using the same camera setup, viewing angle, and lighting conditions as the defect samples to ensure domain consistency.</div>
+        <div class="class-label">Class 1 — Defective</div>
+        <div class="count">240</div>
+        <h3>Scratch (NEU Dataset)</h3>
+        <p>Linear scratch defects from the NEU Surface Defect Dataset — publicly available benchmark of real industrial steel surface images.</p>
+        <div class="bar-wrap" style="margin-top:1rem;">
+          <div class="bar-label"><span>Share of dataset</span><span>76.4%</span></div>
+          <div class="bar"><div class="bar-fill bar-bad" style="width:76.4%"></div></div>
+        </div>
       </div>
     </div>
 
-    <div class="callout">
-      <strong>Why self-collect the normal class?</strong> The NEU dataset provides no defect-free reference images — a critical gap for binary classification. Mixing unrelated public datasets would introduce domain mismatch. Self-collected images from the same setup ensure the classifier learns the correct surface texture of <em>this</em> workshop's components, not a different factory's steel.
+    <div class="note" style="margin-top:1.2rem;">
+      <strong>Why self-collect the Good class?</strong> The NEU dataset contains only defective samples — no defect-free reference images. Mixing an unrelated public normal-class dataset would introduce domain mismatch. Self-collected images from the same imaging conditions ensure the classifier learns the correct surface texture of this workshop's components.
     </div>
   </div>
 
   <!-- DATASET CHARACTERISTICS -->
-  <div class="section fade-in fade-in-2">
+  <div class="section-block">
     <div class="section-header">
       <span class="section-num">5.2</span>
-      <span class="section-title">Dataset Characteristics</span>
-      <span class="section-divider"></span>
+      <h2>Dataset Characteristics</h2>
+    </div>
+    <table class="report-table">
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>Image resolution (after resize)</td><td style="color:var(--muted);">200 × 200 px</td></tr>
+      <tr><td>Input colour space</td><td style="color:var(--muted);">Grayscale (converted from RGB)</td></tr>
+      <tr><td>Total samples</td><td style="color:var(--muted);">314 (Good: 74, Scratch: 240)</td></tr>
+      <tr><td>Train / Test split</td><td style="color:var(--muted);">80% / 20% stratified (≈251 train, 63 test)</td></tr>
+      <tr><td>Features per image</td><td style="color:var(--muted);">4 (edge_density, max_aspect_ratio, contrast, homogeneity)</td></tr>
+      <tr><td>Classifier</td><td style="color:var(--muted);">SVM (StandardScaler + SVC with Platt scaling)</td></tr>
+      <tr><td>Preprocessing noise filter</td><td style="color:var(--muted);">Median blur, kernel = 5</td></tr>
+      <tr><td>Canny thresholds</td><td style="color:var(--muted);">T_low = 10, T_high = 70</td></tr>
+      <tr><td>Dilation</td><td style="color:var(--muted);">3×3 kernel, 1 iteration</td></tr>
+    </table>
+  </div>
+
+  <!-- CONFUSION MATRIX -->
+  <div class="section-block">
+    <div class="section-header">
+      <span class="section-num">5.3</span>
+      <h2>Confusion Matrix</h2>
+    </div>
+    <p style="color:var(--muted);margin-bottom:1.5rem;">Test set evaluation (63 samples). Only 1 sample is misclassified — a Scratch image predicted as Good (false negative), traceable to near-zero edge density in <em>scratches_74.jpg</em>.</p>
+
+    <div class="conf-matrix-wrap">
+      <div class="conf-matrix">
+        <div class="matrix-title">Predicted →</div>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th style="text-align:center;color:#4caf7d;">Pred: Good</th>
+              <th style="text-align:center;color:#e8a832;">Pred: Defect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th style="text-align:right;padding-right:12px;color:#4caf7d;">Actual: Good</th>
+              <td class="cm-tn">15</td>
+              <td class="cm-fp">0</td>
+            </tr>
+            <tr>
+              <th style="text-align:right;padding-right:12px;color:#e8a832;">Actual: Defect</th>
+              <td class="cm-fn">1</td>
+              <td class="cm-tp">47</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:1rem;">
+          TN=15 &nbsp;|&nbsp; FP=0 &nbsp;|&nbsp; FN=1 &nbsp;|&nbsp; TP=47
+        </div>
+      </div>
     </div>
 
-    <div class="pipeline">
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Image Type</div>
-        <div class="pipe-desc">Grayscale / RGB. Converted to grayscale during preprocessing. Original NEU images are grayscale; self-collected images captured as RGB and converted.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Resolution</div>
-        <div class="pipe-desc">Uniformly resized to a fixed resolution (200×200 px) during preprocessing. Original NEU resolution is 200×200 px; self-collected images resized to match.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Classes</div>
-        <div class="pipe-desc"><code>Class 0</code> — No-Defect (normal steel surface, no visible scratch, dent, or corrosion) &nbsp;·&nbsp; <code>Class 1</code> — Scratch (visible linear scratch defect on steel surface)</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Conditions</div>
-        <div class="pipe-desc">Realistic workshop lighting and surface variations. No controlled laboratory conditions. Both classes captured under matching camera geometry, viewpoint, and approximate illumination.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Domain Consistency</div>
-        <div class="pipe-desc">Self-collected No-Defect images use the same camera setup, viewing angle, and lighting conditions as the NEU Scratch images — avoiding domain mismatch that would inflate or deflate classifier performance.</div>
-      </div>
+    <div class="warn-note">
+      <strong>FN=1 (scratches_74.jpg)</strong> — The single false negative has edge_density=0.0014 and max_aspect_ratio=1.29. Canny detected almost no edges on this particular image because the scratch is faint and low-contrast. The SVM received a feature vector indistinguishable from a good surface. Documented as a known pipeline limitation. <strong>FP=0</strong> — no good surface was ever falsely flagged as defective.
     </div>
   </div>
 
-  <!-- NORMAL CLASS COLLECTION -->
-  <div class="section fade-in fade-in-3">
+  <!-- CLASSIFICATION REPORT -->
+  <div class="section-block">
     <div class="section-header">
-      <span class="section-num">5.3</span>
-      <span class="section-title">No-Defect Image Collection Protocol</span>
-      <span class="section-divider"></span>
+      <span class="section-num">5.4</span>
+      <h2>Classification Report</h2>
     </div>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1-Score</th>
+          <th>Support</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Good (Class 0)</td>
+          <td class="highlight">0.94</td>
+          <td class="highlight">1.00</td>
+          <td class="highlight">0.97</td>
+          <td style="color:var(--muted);">15</td>
+        </tr>
+        <tr>
+          <td>Defective (Class 1)</td>
+          <td class="highlight">1.00</td>
+          <td class="highlight">0.98</td>
+          <td class="highlight">0.99</td>
+          <td style="color:var(--muted);">48</td>
+        </tr>
+        <tr class="total-row">
+          <td>Overall Accuracy</td>
+          <td colspan="3"></td>
+          <td>0.98</td>
+        </tr>
+        <tr>
+          <td>Macro Avg</td>
+          <td style="color:var(--muted);">0.97</td>
+          <td style="color:var(--muted);">0.99</td>
+          <td style="color:var(--muted);">0.98</td>
+          <td style="color:var(--muted);">63</td>
+        </tr>
+        <tr>
+          <td>Weighted Avg</td>
+          <td style="color:var(--muted);">0.98</td>
+          <td style="color:var(--muted);">0.98</td>
+          <td style="color:var(--muted);">0.98</td>
+          <td style="color:var(--muted);">63</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <p class="prose">The self-collected normal class follows a strict collection protocol to ensure domain consistency with the NEU scratch images. Surfaces selected are clean steel plates without visible scratches, dents, or corrosion.</p>
-
-    <div class="card-grid">
-      <div class="card">
-        <div class="card-title">Surface Selection</div>
-        <div class="card-body">Clean steel plates without visible scratches, dents, rust spots, or surface contamination. Multiple plates used to capture natural variation in surface texture and finish.</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Camera Setup</div>
-        <div class="card-body">Same fixed overhead camera, same approximate distance, same viewing angle as used for any defect image captures. Consistent perspective across both classes.</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Lighting Conditions</div>
-        <div class="card-body">Realistic workshop lighting — not studio-controlled. Mirrors real MSME inspection conditions, including minor illumination variation between captures.</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Validation</div>
-        <div class="card-body">Each collected image manually verified to confirm absence of any visible defect before inclusion in the No-Defect class. Ambiguous surfaces discarded.</div>
-      </div>
+    <div class="note">
+      <strong>Zero false positives (FP=0) is critical for MSME deployment.</strong> In a production context, falsely rejecting a good part (FP) wastes material and slows output. The SVM achieves perfect precision on the Defective class — every part flagged as defective truly is defective. The single misclassification is a missed defect (FN), not a false alarm.
     </div>
   </div>
 
   <!-- IMPLEMENTATION STATUS -->
-  <div class="section fade-in fade-in-4">
+  <div class="section-block">
     <div class="section-header">
-      <span class="section-num">5.4</span>
-      <span class="section-title">Implementation Status</span>
-      <span class="section-divider"></span>
+      <span class="section-num">5.5</span>
+      <h2>Implementation Status</h2>
     </div>
 
-    <div class="callout">
-      <strong>Note:</strong> Experimental results will be populated here as implementation progresses. The table below tracks current project status across pipeline stages.
+    <div class="phase-list">
+      <div class="phase-item">
+        <span class="phase-num">01</span>
+        <span class="phase-title">Dataset Setup</span>
+        <span class="phase-desc">NEU Scratch class + 74 self-collected Good images. 314 total samples.</span>
+        <span class="badge badge-done">✓ Done</span>
+      </div>
+      <div class="phase-item">
+        <span class="phase-num">02</span>
+        <span class="phase-title">Preprocessing</span>
+        <span class="phase-desc">Grayscale · Resize 200×200 · Median Blur (k=5) · Canny (10,70) · Dilate (3×3). Verified via verify_edges.py Streamlit app.</span>
+        <span class="badge badge-done">✓ Done</span>
+      </div>
+      <div class="phase-item">
+        <span class="phase-num">03</span>
+        <span class="phase-title">Feature Extraction</span>
+        <span class="phase-desc">features.csv — 314 rows × 4 features (edge_density, max_aspect_ratio, contrast, homogeneity).</span>
+        <span class="badge badge-done">✓ Done</span>
+      </div>
+      <div class="phase-item">
+        <span class="phase-num">04</span>
+        <span class="phase-title">SVM Training</span>
+        <span class="phase-desc">98% accuracy. Confusion matrix [[15,0],[1,47]]. svm_model.pkl + scaler.pkl saved.</span>
+        <span class="badge badge-done">✓ Done</span>
+      </div>
+      <div class="phase-item">
+        <span class="phase-num">05</span>
+        <span class="phase-title">Inference Testing</span>
+        <span class="phase-desc">predict.py tested on multiple images — 86–99% confidence. Known outlier: scratches_74.jpg (FN, edge_density=0.0014).</span>
+        <span class="badge badge-done">✓ Done</span>
+      </div>
+      <div class="phase-item" style="border-color:rgba(232,168,50,0.3);">
+        <span class="phase-num">06</span>
+        <span class="phase-title">FastAPI Deployment</span>
+        <span class="phase-desc">app.py — single /predict endpoint. Upload image → JSON {filename, status, confidence}. Runs at localhost:8000/docs.</span>
+        <span class="badge badge-progress">In Progress</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWN LIMITATION -->
+  <div class="section-block">
+    <div class="section-header">
+      <span class="section-num">5.6</span>
+      <h2>Known Limitation &amp; Future Work</h2>
     </div>
 
-    <div style="border:1px solid var(--border);background:var(--surface);padding:0 24px;">
-      <div class="roadmap-item">
-        <div class="rm-num">01</div>
-        <div class="rm-phase">Dataset Setup</div>
-        <div class="rm-desc">NEU Scratch class downloaded, normal class self-collection in progress.</div>
-        <div><span class="status-badge done">✓ Done</span></div>
-      </div>
-      <div class="roadmap-item">
-        <div class="rm-num">02</div>
-        <div class="rm-phase">Preprocessing</div>
-        <div class="rm-desc">Grayscale conversion, CLAHE, Gaussian blur, normalization pipeline implemented.</div>
-        <div><span class="status-badge done">✓ Done</span></div>
-      </div>
-      <div class="roadmap-item">
-        <div class="rm-num">03</div>
-        <div class="rm-phase">Segmentation</div>
-        <div class="rm-desc">Canny edge detection + morphological ops + candidate region filtering.</div>
-        <div><span class="status-badge progress">In Progress</span></div>
-      </div>
-      <div class="roadmap-item">
-        <div class="rm-num">04</div>
-        <div class="rm-phase">Feature Extraction</div>
-        <div class="rm-desc">Edge density, orientation stats, HOG, LBP, Gabor + PCA pipeline.</div>
-        <div><span class="status-badge progress">In Progress</span></div>
-      </div>
-      <div class="roadmap-item">
-        <div class="rm-num">05</div>
-        <div class="rm-phase">Model Training</div>
-        <div class="rm-desc">LDA + Nearest Centroid binary classifier on PCA-reduced features.</div>
-        <div><span class="status-badge planned">Planned</span></div>
-      </div>
-      <div class="roadmap-item">
-        <div class="rm-num">06</div>
-        <div class="rm-phase">Results &amp; Evaluation</div>
-        <div class="rm-desc">Accuracy, Precision, Recall, F1 on held-out test set. Confusion matrix.</div>
-        <div><span class="status-badge planned">Planned</span></div>
-      </div>
+    <div class="warn-note">
+      <strong>Pipeline limitation — faint / low-contrast scratches</strong><br><br>
+      The edge-based feature pipeline cannot reliably detect scratches with near-zero intensity gradient. <em>scratches_74.jpg</em> is the documented example: edge_density = 0.0014, max_aspect_ratio = 1.29 — values indistinguishable from a smooth good surface. Canny with T_low=10 found almost no edges. Result: misclassified as Good.<br><br>
+      This is a fundamental limitation of Canny-based feature extraction for shallow or partially polished scratches that do not produce strong intensity discontinuities.
     </div>
+
+    <p style="color:var(--muted);margin-top:1.2rem;margin-bottom:0.8rem;"><strong style="color:var(--text);">Proposed future improvements:</strong></p>
+    <ul style="color:var(--muted);font-size:13.5px;padding-left:1.5rem;display:flex;flex-direction:column;gap:0.5rem;">
+      <li><strong style="color:var(--text);">LBP histogram features</strong> — Local Binary Patterns capture micro-texture anomalies independent of edge strength. A faint scratch still disrupts the local texture pattern even when Canny misses it.</li>
+      <li><strong style="color:var(--text);">Gabor filter responses</strong> — Multi-orientation Gabor bank captures directional texture energy at the scratch orientation, robust to low contrast.</li>
+      <li><strong style="color:var(--text);">CLAHE preprocessing</strong> — Adaptive histogram equalisation before Canny could amplify faint scratches enough for edge detection to catch them.</li>
+      <li><strong style="color:var(--text);">Data augmentation</strong> — Synthetic faint-scratch augmentation to give the SVM examples of this failure mode during training.</li>
+    </ul>
   </div>
 
 </div>
 
 <footer>
-  <div class="footer-left">© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</div>
-  <div class="footer-right">
+  <span>© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</span>
+  <div class="footer-links">
     <a href="index.html">Overview</a>
     <a href="architecture.html">Architecture</a>
     <a href="methodology.html">Methodology</a>
