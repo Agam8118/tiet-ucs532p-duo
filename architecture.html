@@ -1,939 +1,447 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Architecture — Metal Surface Defect Detection</title>
-  <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --bg:       #0c0d0f;
-  --surface:  #131518;
-  --panel:    #181a1e;
-  --border:   #222428;
-  --border2:  #2c2f35;
-  --amber:    #e8a634;
-  --amber-dim:#7a5414;
-  --steel:    #8eb4c8;
-  --red:      #d95e5e;
-  --green:    #5ec98a;
-  --text:     #d6d9e0;
-  --muted:    #5a5f6e;
-  --muted2:   #3a3f4a;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.7;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Scanline texture */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.06) 2px,
-    rgba(0,0,0,0.06) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* ── NAV ── */
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(12,13,15,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  height: 56px;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.nav-logo {
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid var(--amber);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--amber);
-  letter-spacing: -0.05em;
-}
-
-.nav-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  list-style: none;
-}
-
-.nav-links a {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
-  text-decoration: none;
-  padding: 6px 14px;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-  position: relative;
-}
-
-.nav-links a:hover,
-.nav-links a.active {
-  color: var(--amber);
-}
-
-.nav-links a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 14px;
-  right: 14px;
-  height: 1px;
-  background: var(--amber);
-}
-
-/* ── LAYOUT ── */
-.page-wrap {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 0 32px 80px;
-}
-
-/* ── HERO ── */
-.hero {
-  padding: 80px 0 64px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 64px;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero::before {
-  content: 'DEFECT\ADETECT';
-  white-space: pre;
-  position: absolute;
-  right: -20px;
-  top: 20px;
-  font-family: var(--mono);
-  font-size: 120px;
-  font-weight: 700;
-  line-height: 0.9;
-  color: rgba(232,166,52,0.04);
-  pointer-events: none;
-  letter-spacing: -0.06em;
-  user-select: none;
-}
-
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.eyebrow-line {
-  width: 32px;
-  height: 1px;
-  background: var(--amber);
-}
-
-.eyebrow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--amber);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(232,166,52,0.4); }
-  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(232,166,52,0); }
-}
-
-.hero h1 {
-  font-family: var(--mono);
-  font-size: clamp(28px, 4vw, 48px);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  margin-bottom: 8px;
-  color: #fff;
-}
-
-.hero h1 em {
-  font-style: normal;
-  color: var(--amber);
-}
-
-.hero-sub {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--muted);
-  margin-bottom: 36px;
-  letter-spacing: 0.04em;
-}
-
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 40px;
-}
-
-.tag {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 4px 12px;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.tag.amber { border-color: var(--amber-dim); color: var(--amber); background: rgba(232,166,52,0.06); }
-.tag.steel { border-color: #2a4a5a; color: var(--steel); background: rgba(142,180,200,0.06); }
-.tag.green { border-color: #1e4a32; color: var(--green); background: rgba(94,201,138,0.06); }
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 10px 22px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  cursor: pointer;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--amber);
-  color: #0c0d0f;
-}
-
-.btn-primary:hover {
-  background: #f0b84a;
-  box-shadow: 0 0 24px rgba(232,166,52,0.3);
-}
-
-.btn-ghost {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-}
-
-.btn-ghost:hover {
-  border-color: var(--amber-dim);
-  color: var(--amber);
-}
-
-/* ── STAT ROW ── */
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--border);
-  margin-bottom: 64px;
-  background: var(--surface);
-}
-
-.stat {
-  padding: 24px 28px;
-  border-right: 1px solid var(--border);
-}
-
-.stat:last-child { border-right: none; }
-
-.stat-val {
-  font-family: var(--mono);
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--amber);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-}
-
-/* ── SECTION ── */
-.section { margin-bottom: 64px; }
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 28px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.section-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--amber);
-  letter-spacing: 0.15em;
-}
-
-.section-title {
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.section-divider {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-/* ── GRID CARDS ── */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-}
-
-.card {
-  background: var(--surface);
-  padding: 24px;
-  transition: background 0.2s;
-}
-
-.card:hover { background: var(--panel); }
-
-.card-icon {
-  font-size: 22px;
-  margin-bottom: 12px;
-  display: block;
-}
-
-.card-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--amber);
-  margin-bottom: 8px;
-  letter-spacing: 0.02em;
-}
-
-.card-body {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-/* ── PIPELINE TABLE ── */
-.pipeline {
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.pipeline-row {
-  display: grid;
-  grid-template-columns: 48px 200px 1fr;
-  align-items: start;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.pipeline-row:last-child { border-bottom: none; }
-.pipeline-row:hover { background: var(--panel); }
-
-.pipe-num {
-  padding: 20px 0 20px 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--amber-dim);
-  font-weight: 700;
-}
-
-.pipe-stage {
-  padding: 20px 16px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--amber);
-  border-right: 1px solid var(--border);
-}
-
-.pipe-desc {
-  padding: 20px 24px;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.pipe-desc code {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border2);
-  padding: 1px 6px;
-  color: var(--steel);
-}
-
-/* ── CODE BLOCK ── */
-.code-block {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  padding: 24px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--steel);
-  line-height: 1.7;
-  overflow-x: auto;
-  margin: 20px 0;
-  position: relative;
-}
-
-.code-block::before {
-  content: attr(data-lang);
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 10px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.code-block .kw { color: var(--amber); }
-.code-block .cm { color: var(--muted); font-style: italic; }
-.code-block .fn { color: var(--green); }
-.code-block .st { color: #c9a87c; }
-
-/* ── RESULT TABLE ── */
-.result-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--mono);
-  font-size: 12px;
-  border: 1px solid var(--border);
-}
-
-.result-table thead tr {
-  background: var(--panel);
-  border-bottom: 2px solid var(--amber-dim);
-}
-
-.result-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--amber);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 10px;
-}
-
-.result-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-}
-
-.result-table tr:hover td { background: var(--panel); }
-.result-table td.highlight { color: var(--text); font-weight: 600; }
-.result-table td.best { color: var(--green); font-weight: 700; }
-
-.bar-cell { display: flex; align-items: center; gap: 10px; }
-.bar-bg {
-  height: 6px;
-  background: var(--border2);
-  flex: 1;
-  position: relative;
-}
-.bar-fill {
-  height: 100%;
-  background: var(--amber);
-  transition: width 1s ease;
-}
-.bar-fill.steel { background: var(--steel); }
-.bar-fill.green { background: var(--green); }
-
-/* ── CALLOUT ── */
-.callout {
-  border-left: 3px solid var(--amber);
-  background: rgba(232,166,52,0.05);
-  padding: 16px 20px;
-  margin: 20px 0;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.callout strong { color: var(--amber); font-family: var(--mono); }
-
-/* ── FEATURE GRID ── */
-.feat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-
-.feat-item {
-  background: var(--surface);
-  padding: 20px 22px;
-}
-
-.feat-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--amber);
-  margin-bottom: 6px;
-}
-
-.feat-desc {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-/* ── FOOTER ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 32px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.footer-left {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.footer-left a { color: var(--amber); text-decoration: none; }
-.footer-left a:hover { text-decoration: underline; }
-
-.footer-right {
-  display: flex;
-  gap: 20px;
-}
-
-.footer-right a {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-}
-
-.footer-right a:hover { color: var(--amber); }
-
-/* ── ARCH DIAGRAM ── */
-.arch-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid var(--border);
-}
-
-.arch-node {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.arch-node:last-child { border-bottom: none; }
-.arch-node:hover { background: var(--panel); }
-
-.arch-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0;
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  gap: 4px;
-}
-
-.arch-step-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--amber);
-}
-
-.arch-step-arrow {
-  color: var(--border2);
-  font-size: 14px;
-}
-
-.arch-content {
-  padding: 20px 28px;
-}
-
-.arch-name {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 6px;
-}
-
-.arch-detail {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.arch-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.chip {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 3px 8px;
-  background: var(--panel);
-  border: 1px solid var(--border2);
-  color: var(--steel);
-  letter-spacing: 0.04em;
-}
-
-/* ── ANIMATIONS ── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in { animation: fadeIn 0.6s ease both; }
-.fade-in-1 { animation-delay: 0.1s; }
-.fade-in-2 { animation-delay: 0.2s; }
-.fade-in-3 { animation-delay: 0.3s; }
-.fade-in-4 { animation-delay: 0.4s; }
-.fade-in-5 { animation-delay: 0.5s; }
-.fade-in-6 { animation-delay: 0.6s; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  nav { padding: 0 20px; }
-  .page-wrap { padding: 0 20px 60px; }
-  .stat-row { grid-template-columns: 1fr 1fr; }
-  .stat { border-bottom: 1px solid var(--border); }
-  .feat-grid { grid-template-columns: 1fr; }
-  .pipeline-row { grid-template-columns: 40px 140px 1fr; }
-  .hero::before { display: none; }
-}
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modular Pipeline Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141418;
+    --surface2: #1a1a20;
+    --border: #2a2a35;
+    --accent: #e8a832;
+    --accent2: #5b8def;
+    --text: #e8e6e0;
+    --muted: #7a7870;
+    --code-bg: #0a0a0c;
+    --good: #4caf7d;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-weight: 300;
+    font-size: 15px; line-height: 1.7;
+  }
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,13,15,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 2rem;
+    padding: 0 2.5rem; height: 52px;
+  }
+  .nav-brand {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); text-decoration: none;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .nav-brand span { color: var(--muted); }
+  nav a:not(.nav-brand) {
+    font-size: 12px; color: var(--muted); text-decoration: none;
+    letter-spacing: 0.04em; transition: color 0.2s;
+  }
+  nav a:not(.nav-brand):hover { color: var(--text); }
+  nav a.active { color: var(--text); }
+
+  .hero { padding: 5rem 2.5rem 3rem; max-width: 860px; margin: 0 auto; }
+  .section-tag {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 5vw, 3rem); font-weight: 300; line-height: 1.15;
+    color: var(--text); margin-bottom: 1rem;
+  }
+  h1 em { color: var(--accent); font-style: italic; }
+  .hero-sub { color: var(--muted); max-width: 560px; font-size: 14px; }
+
+  .content { max-width: 860px; margin: 0 auto; padding: 0 2.5rem 6rem; }
+  .section-block { margin-bottom: 4rem; }
+  .section-header {
+    display: flex; align-items: baseline; gap: 1.2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem; margin-bottom: 2rem;
+  }
+  .section-num {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--accent); letter-spacing: 0.1em;
+  }
+  h2 {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 1.35rem; color: var(--text);
+  }
+
+  /* PRINCIPLE CARDS */
+  .principle-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem; margin: 1.5rem 0;
+  }
+  .principle-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.2rem;
+  }
+  .principle-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 0.4rem; }
+  .principle-card p { font-size: 12.5px; color: var(--muted); }
+
+  /* PIPELINE STEPS */
+  .pipeline-steps { display: flex; flex-direction: column; gap: 0; }
+  .pipe-step {
+    display: grid; grid-template-columns: 80px 1fr;
+    gap: 0; border: 1px solid var(--border);
+    margin-bottom: -1px; background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .pipe-step:first-child { border-radius: 4px 4px 0 0; }
+  .pipe-step:last-child { border-radius: 0 0 4px 4px; }
+  .pipe-step:hover { border-color: var(--accent); z-index: 1; position: relative; }
+  .pipe-num {
+    background: var(--surface2); border-right: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 0.3rem; padding: 1.4rem 0.5rem;
+  }
+  .pipe-num .snum {
+    font-family: 'DM Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; color: var(--accent);
+  }
+  .pipe-num .arrow { color: var(--border); font-size: 18px; line-height: 1; }
+  .pipe-body { padding: 1.2rem 1.4rem; }
+  .pipe-body h3 { font-size: 14px; font-weight: 500; margin-bottom: 0.3rem; }
+  .pipe-body p { font-size: 13px; color: var(--muted); margin-bottom: 0.5rem; }
+  .pipe-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.6rem; }
+  .pipe-tag {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); padding: 2px 8px; border-radius: 2px;
+  }
+
+  /* DATA FLOW */
+  .flow-table { width: 100%; border-collapse: collapse; margin: 1.2rem 0; }
+  .flow-table th {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .flow-table td {
+    padding: 0.8rem 1rem; font-size: 13px;
+    border-bottom: 1px solid rgba(42,42,53,0.5); vertical-align: top;
+  }
+  .flow-table td:first-child {
+    font-family: 'DM Mono', monospace; color: var(--accent2); font-size: 12px;
+    white-space: nowrap;
+  }
+  .flow-table td:last-child { color: var(--muted); }
+
+  /* CLASSIFIER COMPARISON */
+  .clf-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem; margin: 1.5rem 0;
+  }
+  .clf-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.3rem;
+  }
+  .clf-card.active { border-color: var(--good); }
+  .clf-card .clf-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .clf-card.active .clf-label { color: var(--good); }
+  .deployed-badge {
+    font-size: 9px; background: rgba(76,175,125,0.15);
+    color: var(--good); border: 1px solid rgba(76,175,125,0.3);
+    padding: 2px 6px; border-radius: 2px;
+  }
+  .clf-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 0.4rem; }
+  .clf-card p { font-size: 12.5px; color: var(--muted); }
+
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1.4rem 1.6rem;
+    overflow-x: auto; margin: 1.2rem 0;
+  }
+  code {
+    font-family: 'DM Mono', monospace; font-size: 12.5px;
+    color: #c8d8e8; line-height: 1.8;
+  }
+  .c { color: var(--muted); }
+  .kw { color: #e8a832; }
+  .fn { color: #7ec8a0; }
+  .st { color: #f4a261; }
+  .nm { color: #a8c8f0; }
+
+  footer {
+    border-top: 1px solid var(--border); padding: 2rem 2.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--muted); letter-spacing: 0.06em;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  .footer-links { display: flex; gap: 1.5rem; }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="index.html" class="nav-brand">
-    <div class="nav-logo">CV</div>
-    <span class="nav-title">MSDD · Pixel Duo</span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="index.html">Overview</a></li>
-    <li><a href="architecture.html" class="active">Architecture</a></li>
-    <li><a href="methodology.html">Methodology</a></li>
-    <li><a href="results.html">Results</a></li>
-    <li><a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a></li>
-  </ul>
+  <a class="nav-brand" href="index.html"><span>CV</span> MSDD · Pixel Duo</a>
+  <a href="index.html">Overview</a>
+  <a href="architecture.html" class="active">Architecture</a>
+  <a href="methodology.html">Methodology</a>
+  <a href="results.html">Results</a>
+  <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a>
 </nav>
 
-<div class="page-wrap">
+<div class="hero">
+  <div class="section-tag">System Architecture</div>
+  <h1>Modular Pipeline <em>Architecture</em></h1>
+  <p class="hero-sub">Five-stage classical CV pipeline terminating in a StandardScaler + SVM classifier. No GPU. No deep learning. CPU inference under 50 ms.</p>
+</div>
 
-  <div class="hero fade-in" style="padding-bottom: 40px;">
-    <div class="hero-eyebrow">
-      <span class="eyebrow-line"></span>
-      <span>System Architecture</span>
-    </div>
-    <h1>Modular Pipeline<br><em>Architecture</em></h1>
-    <p class="hero-sub">Domain-independent core with domain-specific model selection — the same preprocessing and feature extraction serves metal surfaces.</p>
-  </div>
+<div class="content">
 
   <!-- DESIGN PRINCIPLES -->
-  <div class="section fade-in fade-in-1">
+  <div class="section-block">
     <div class="section-header">
       <span class="section-num">01</span>
-      <span class="section-title">Design Principles</span>
-      <span class="section-divider"></span>
+      <h2>Design Principles</h2>
     </div>
-
-    <div class="callout">
-      <strong>Key insight:</strong> Preprocessing and feature extraction are kept <strong>domain-independent</strong>. Only the final ML classifier is swapped per domain. This makes the framework extensible to new surfaces without redesigning the full pipeline.
-    </div>
-
-    <div class="card-grid">
-      <div class="card">
-        <div class="card-title">Modularity</div>
-        <div class="card-body">Each stage is a self-contained module with a defined input/output contract. Stages can be swapped or tuned independently without breaking the pipeline.</div>
+    <div class="principle-grid">
+      <div class="principle-card">
+        <h3>Modularity</h3>
+        <p>Each stage has a defined input/output contract. Preprocessing, feature extraction, and classifier can be tuned independently.</p>
       </div>
-      <div class="card">
-        <div class="card-title">Interpretability-First</div>
-        <div class="card-body">Every decision can be traced back to specific feature values. No black-box layers — suitable for certified quality control environments.</div>
+      <div class="principle-card">
+        <h3>Interpretability</h3>
+        <p>Every prediction is traceable to four scalar feature values. No black-box layers — suitable for certified quality control environments.</p>
       </div>
-      <div class="card">
-        <div class="card-title">CPU-Native</div>
-        <div class="card-body">No GPU dependencies. All operations — from Gabor filtering to Random Forest inference — run on standard multi-core CPUs available in factory settings.</div>
+      <div class="principle-card">
+        <h3>CPU-Native</h3>
+        <p>All operations — from Canny edge detection to SVM inference — run on standard CPUs. No GPU dependencies.</p>
       </div>
-      <div class="card">
-        <div class="card-title">Low-Data Regime</div>
-        <div class="card-body">Architecture is designed for 100–500 samples per class, not thousands. PCA dimensionality reduction actively prevents overfitting on small datasets.</div>
+      <div class="principle-card">
+        <h3>Low-Data Regime</h3>
+        <p>Designed for ~300 samples. A 4D feature vector + StandardScaler prevents overfitting without requiring PCA dimensionality reduction.</p>
       </div>
     </div>
   </div>
 
   <!-- FULL PIPELINE -->
-  <div class="section fade-in fade-in-2">
+  <div class="section-block">
     <div class="section-header">
       <span class="section-num">02</span>
-      <span class="section-title">Full Pipeline Architecture</span>
-      <span class="section-divider"></span>
+      <h2>Full Pipeline Architecture</h2>
     </div>
 
-    <div class="arch-flow">
-
-      <div class="arch-node">
-        <div class="arch-step">
-          <span class="arch-step-num">S1</span>
-          <span class="arch-step-arrow">↓</span>
+    <div class="pipeline-steps">
+      <div class="pipe-step">
+        <div class="pipe-num">
+          <span class="snum">S1</span>
+          <span class="arrow">↓</span>
         </div>
-        <div class="arch-content">
-          <div class="arch-name">Image Acquisition</div>
-          <div class="arch-detail">Capture high-resolution surface images (≥2048×2048 px) under controlled 45° incident LED lighting to minimize specular reflection. Images sourced from the NEU Metal Surface Defect Dataset — 6 defect classes × 300 images each = 1800 total samples.</div>
-          <div class="arch-chips">
-            <span class="chip">NEU Dataset</span>
-            <span class="chip">2048×2048 px</span>
-            <span class="chip">45° LED lighting</span>
-            <span class="chip">Grayscale</span>
+        <div class="pipe-body">
+          <h3>Image Acquisition</h3>
+          <p>Standard RGB camera image of a metal surface. Both self-collected good surfaces and NEU dataset scratch images are accepted. Images do not require controlled laboratory conditions.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">RGB Input</span>
+            <span class="pipe-tag">NEU Dataset</span>
+            <span class="pipe-tag">Self-collected</span>
+            <span class="pipe-tag">Any resolution</span>
           </div>
         </div>
       </div>
 
-      <div class="arch-node">
-        <div class="arch-step">
-          <span class="arch-step-num">S2</span>
-          <span class="arch-step-arrow">↓</span>
+      <div class="pipe-step">
+        <div class="pipe-num">
+          <span class="snum">S2</span>
+          <span class="arrow">↓</span>
         </div>
-        <div class="arch-content">
-          <div class="arch-name">Preprocessing</div>
-          <div class="arch-detail">Sequential noise reduction and contrast normalization pipeline. Gaussian blur removes high-frequency sensor noise. CLAHE (Contrast Limited Adaptive Histogram Equalization) enhances local contrast in defect regions. Bilateral filtering preserves edge sharpness while smoothing homogeneous surface regions. Final intensity normalization to [0,1].</div>
-          <div class="arch-chips">
-            <span class="chip">Gaussian Blur</span>
-            <span class="chip">CLAHE</span>
-            <span class="chip">Bilateral Filter</span>
-            <span class="chip">Normalization [0,1]</span>
+        <div class="pipe-body">
+          <h3>Preprocessing</h3>
+          <p>Grayscale conversion → resize to 200×200 px → median blur (kernel=5) for salt-and-pepper noise suppression. Parameters are locked and must not be changed.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">Grayscale</span>
+            <span class="pipe-tag">Resize 200×200</span>
+            <span class="pipe-tag">Median Blur k=5</span>
           </div>
         </div>
       </div>
 
-      <div class="arch-node">
-        <div class="arch-step">
-          <span class="arch-step-num">S3</span>
-          <span class="arch-step-arrow">↓</span>
+      <div class="pipe-step">
+        <div class="pipe-num">
+          <span class="snum">S3</span>
+          <span class="arrow">↓</span>
         </div>
-        <div class="arch-content">
-          <div class="arch-name">Defect Segmentation</div>
-          <div class="arch-detail">Otsu's global thresholding adaptively determines an optimal binarization threshold from the image histogram. Morphological opening removes small noise blobs; closing fills gaps within defect regions. Connected component analysis labels distinct candidate regions. Size filtering (minimum 50 px²) eliminates sensor artifacts.</div>
-          <div class="arch-chips">
-            <span class="chip">Otsu Thresholding</span>
-            <span class="chip">Morphological Open/Close</span>
-            <span class="chip">Connected Components</span>
-            <span class="chip">Size Filter ≥50px²</span>
+        <div class="pipe-body">
+          <h3>Defect Segmentation</h3>
+          <p>Canny edge detection with locked thresholds (T_low=10, T_high=70) followed by morphological dilation (3×3 kernel, 1 iteration). Produces a binary edge map isolating scratch-like linear discontinuities.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">Canny (10, 70)</span>
+            <span class="pipe-tag">Dilate 3×3</span>
+            <span class="pipe-tag">Binary edge map</span>
           </div>
         </div>
       </div>
 
-      <div class="arch-node">
-        <div class="arch-step">
-          <span class="arch-step-num">S4</span>
-          <span class="arch-step-arrow">↓</span>
+      <div class="pipe-step">
+        <div class="pipe-num">
+          <span class="snum">S4</span>
+          <span class="arrow">↓</span>
         </div>
-        <div class="arch-content">
-          <div class="arch-name">Feature Extraction</div>
-          <div class="arch-detail">Multi-modal feature extraction capturing complementary surface properties. LBP captures rotation-invariant micro-texture. Gabor filter bank extracts directional texture at multiple scales and orientations. GLCM computes second-order texture statistics. Shape descriptors characterize defect geometry. Statistical moments (mean, variance, skewness, kurtosis) describe intensity distributions.</div>
-          <div class="arch-chips">
-            <span class="chip">LBP Texture</span>
-            <span class="chip">Gabor 4×3 Bank</span>
-            <span class="chip">HOG Gradients</span>
-            <span class="chip">GLCM</span>
-            <span class="chip">Shape Descriptors</span>
-            <span class="chip">Statistical Moments</span>
+        <div class="pipe-body">
+          <h3>Feature Extraction</h3>
+          <p>Four handcrafted scalar features per image: edge density (fraction of edge pixels), max aspect ratio of edge contours (scratch elongation), GLCM contrast (local intensity variation), and GLCM homogeneity (surface smoothness). Computed at d=1, θ=0°.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">Edge Density</span>
+            <span class="pipe-tag">Max Aspect Ratio</span>
+            <span class="pipe-tag">GLCM Contrast</span>
+            <span class="pipe-tag">GLCM Homogeneity</span>
+            <span class="pipe-tag">4D vector</span>
           </div>
         </div>
       </div>
 
-      <div class="arch-node">
-        <div class="arch-step">
-          <span class="arch-step-num">S5</span>
-          <span class="arch-step-arrow">↓</span>
+      <div class="pipe-step">
+        <div class="pipe-num">
+          <span class="snum">S5</span>
+          <span class="arrow">↓</span>
         </div>
-        <div class="arch-content">
-          <div class="arch-name">Dimensionality Reduction</div>
-          <div class="arch-detail">PCA reduces the raw 100+ dimensional feature vector to the 20–30 most discriminative principal components, retaining ≥95% of total variance. This eliminates correlated redundancy between features, accelerates downstream classification, and significantly reduces overfitting risk on small datasets. LDA further projects features to maximize between-class separation.</div>
-          <div class="arch-chips">
-            <span class="chip">PCA → 20–30 components</span>
-            <span class="chip">≥95% variance retained</span>
-            <span class="chip">LDA projection</span>
+        <div class="pipe-body">
+          <h3>StandardScaler + SVM Classification</h3>
+          <p>The 4D feature vector is z-score standardised (zero mean, unit variance per feature) and passed to a fitted SVM. Platt scaling (predict_proba) converts decision scores to confidence percentages. Trained artifacts: <code>svm_model.pkl</code>, <code>scaler.pkl</code>.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">StandardScaler</span>
+            <span class="pipe-tag">SVC (Platt scaling)</span>
+            <span class="pipe-tag">svm_model.pkl</span>
+            <span class="pipe-tag">scaler.pkl</span>
+            <span class="pipe-tag">98% accuracy</span>
           </div>
         </div>
       </div>
 
-      <div class="arch-node">
-        <div class="arch-step">
-          <span class="arch-step-num">S6</span>
+      <div class="pipe-step" style="border-color:rgba(76,175,125,0.4);">
+        <div class="pipe-num" style="background:rgba(76,175,125,0.06);">
+          <span class="snum" style="color:var(--good);">S6</span>
         </div>
-        <div class="arch-content">
-          <div class="arch-name">ML Classification</div>
-          <div class="arch-detail">Domain-specific classifier is selected based on target material. For metal surfaces: LDA + Nearest Centroid classifier provides fast, interpretable decisions; Random Forest provides non-linear boundaries and feature importance rankings; SVM with RBF kernel serves as a strong baseline. Final output includes defect class label and confidence score.</div>
-          <div class="arch-chips">
-            <span class="chip">LDA + Nearest Centroid</span>
-            <span class="chip">Random Forest</span>
-            <span class="chip">SVM-RBF</span>
-            <span class="chip">Confidence Score</span>
+        <div class="pipe-body">
+          <h3>FastAPI Deployment — app.py</h3>
+          <p>The trained model is served via a FastAPI server at <code>/predict</code>. Accepts multipart image upload, runs the full preprocessing + feature + SVM pipeline, returns JSON with filename, status, and confidence. Interactive Swagger UI at <code>localhost:8000/docs</code>.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">FastAPI</span>
+            <span class="pipe-tag">uvicorn</span>
+            <span class="pipe-tag">/predict</span>
+            <span class="pipe-tag">JSON response</span>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
   <!-- DATA FLOW -->
-  <div class="section fade-in fade-in-3">
+  <div class="section-block">
     <div class="section-header">
       <span class="section-num">03</span>
-      <span class="section-title">Data Flow Specifications</span>
-      <span class="section-divider"></span>
+      <h2>Data Flow Specifications</h2>
     </div>
+    <table class="flow-table">
+      <thead>
+        <tr><th>Stage</th><th>Format</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Input</td>
+          <td>RGB image, any resolution</td>
+          <td>JPEG, PNG accepted by FastAPI endpoint</td>
+        </tr>
+        <tr>
+          <td>After Grayscale + Resize</td>
+          <td>uint8 grayscale, 200×200 px</td>
+          <td>Pixel values [0, 255]</td>
+        </tr>
+        <tr>
+          <td>After Median Blur</td>
+          <td>uint8 grayscale, 200×200 px</td>
+          <td>Salt-and-pepper noise suppressed</td>
+        </tr>
+        <tr>
+          <td>After Canny + Dilate</td>
+          <td>Binary edge map, 200×200 px</td>
+          <td>Values ∈ {0, 255} — edge pixels only</td>
+        </tr>
+        <tr>
+          <td>After Feature Extraction</td>
+          <td>1D float array, 4 dimensions</td>
+          <td>[edge_density, max_aspect_ratio, contrast, homogeneity]</td>
+        </tr>
+        <tr>
+          <td>After StandardScaler</td>
+          <td>1D float array, 4 dimensions</td>
+          <td>Zero-mean, unit-variance per feature</td>
+        </tr>
+        <tr>
+          <td>Output</td>
+          <td>Integer label ∈ {0, 1} + float confidence ∈ [0,1]</td>
+          <td>0 = Good, 1 = Defective (Scratch)</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div class="pipeline">
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Input Format</div>
-        <div class="pipe-desc">Single-channel grayscale image, 200×200 px (resized from original). Pixel values: uint8 [0, 255].</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">After Preprocess</div>
-        <div class="pipe-desc">Float32 image, same spatial dimensions. Pixel values normalized to [0.0, 1.0].</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">After Feature Ext.</div>
-        <div class="pipe-desc">1D feature vector of ~120 dimensions: LBP histogram (59D) + Gabor responses (12D) + HOG descriptor (N) + GLCM stats (5D) + shape features (7D) + statistical moments (4D).</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">After PCA</div>
-        <div class="pipe-desc">Reduced vector of 20–30 float components, zero-mean, unit-variance in PCA space.</div>
-      </div>
-      <div class="pipeline-row">
-        <div class="pipe-num"></div>
-        <div class="pipe-stage">Output</div>
-        <div class="pipe-desc">Integer class label ∈ {0…5} mapping to defect category + float confidence ∈ [0,1] for the predicted class.</div>
-      </div>
-    </div>
+    <pre><code><span class="c"># Full inference pipeline (predict.py / app.py)</span>
+img     = cv2.<span class="fn">imread</span>(path, cv2.IMREAD_GRAYSCALE)
+img     = cv2.<span class="fn">resize</span>(img, (<span class="nm">200</span>, <span class="nm">200</span>))
+img     = cv2.<span class="fn">medianBlur</span>(img, <span class="nm">5</span>)
+edges   = cv2.<span class="fn">Canny</span>(img, <span class="nm">10</span>, <span class="nm">70</span>)
+dilated = cv2.<span class="fn">dilate</span>(edges, np.<span class="fn">ones</span>((<span class="nm">3</span>,<span class="nm">3</span>),np.uint8), iterations=<span class="nm">1</span>)
+
+<span class="c"># 4D feature vector</span>
+features = <span class="fn">extract_features</span>(img, dilated)   <span class="c"># [ed, ar, contrast, homog]</span>
+
+<span class="c"># SVM inference</span>
+feat_scaled = scaler.<span class="fn">transform</span>([features])
+label = model.<span class="fn">predict</span>(feat_scaled)[<span class="nm">0</span>]          <span class="c"># 0 or 1</span>
+conf  = model.<span class="fn">predict_proba</span>(feat_scaled)[<span class="nm">0</span>].<span class="fn">max</span>() * <span class="nm">100</span></code></pre>
   </div>
 
-  <!-- MODEL SELECTION -->
-  <div class="section fade-in fade-in-4">
+  <!-- CLASSIFIER COMPARISON -->
+  <div class="section-block">
     <div class="section-header">
       <span class="section-num">04</span>
-      <span class="section-title">Classifier Comparison</span>
-      <span class="section-divider"></span>
+      <h2>Classifier Comparison</h2>
     </div>
+    <p style="color:var(--muted);margin-bottom:1.5rem;">Multiple classifiers were considered. SVM was selected for its strong performance on small, imbalanced datasets with well-engineered low-dimensional feature vectors.</p>
 
-    <div class="card-grid">
-      <div class="card">
-        <div class="card-title">LDA + Nearest Centroid</div>
-        <div class="card-body">Primary production model. Computes class centroids in LDA-transformed space and assigns test samples by Euclidean distance. Extremely fast (&lt;5ms), fully interpretable, no hyperparameters to tune.</div>
+    <div class="clf-grid">
+      <div class="clf-card active">
+        <div class="clf-label">
+          <span>SVM (RBF / Linear)</span>
+          <span class="deployed-badge">✓ Deployed</span>
+        </div>
+        <h3>98% Accuracy</h3>
+        <p>Max-margin classifier ideal for small, high-quality feature sets. Platt scaling provides calibrated confidence scores. Handles class imbalance (74 vs 240) robustly.</p>
       </div>
-      <div class="card">
-        <div class="card-title">Random Forest</div>
-        <div class="card-body">Ensemble of 200 decision trees providing non-linear decision boundaries. Built-in feature importance ranking reveals which descriptors (LBP vs. Gabor vs. shape) contribute most to each defect class.</div>
+      <div class="clf-card">
+        <div class="clf-label">LDA + Nearest Centroid</div>
+        <h3>Architecture Plan</h3>
+        <p>Original design target. Works well with PCA-reduced high-D features. Replaced by SVM after empirical testing showed higher accuracy on this 4D feature set.</p>
       </div>
-      <div class="card">
-        <div class="card-title">SVM (RBF Kernel)</div>
-        <div class="card-body">Strong statistical baseline for high-dimensional feature spaces. RBF kernel handles non-linear class boundaries. Tuned via grid search over C and γ with 5-fold cross-validation.</div>
+      <div class="clf-card">
+        <div class="clf-label">Random Forest</div>
+        <h3>Baseline Ensemble</h3>
+        <p>Non-linear ensemble with feature importance rankings. Could quantify which of the 4 features contributes most to classification — useful for future feature analysis.</p>
       </div>
-      <div class="card">
-        <div class="card-title">k-NN (k=5)</div>
-        <div class="card-body">Simplest baseline. Classifies by majority vote among 5 nearest neighbors in PCA space. Useful for anomaly detection and understanding the feature space structure.</div>
+      <div class="clf-card">
+        <div class="clf-label">k-NN (k=5)</div>
+        <h3>Simple Baseline</h3>
+        <p>Majority vote among 5 nearest neighbours. Sensitive to class imbalance (240 vs 74 samples) without distance weighting — included only as a sanity-check baseline.</p>
       </div>
     </div>
   </div>
@@ -941,10 +449,8 @@ footer {
 </div>
 
 <footer>
-  <div class="footer-left">
-    © 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET
-  </div>
-  <div class="footer-right">
+  <span>© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</span>
+  <div class="footer-links">
     <a href="index.html">Overview</a>
     <a href="methodology.html">Methodology</a>
     <a href="results.html">Results</a>
