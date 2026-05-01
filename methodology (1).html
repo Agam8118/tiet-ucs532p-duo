@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Methodology · Dual-Branch Defect Classifier · Pixel Duo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f; --surface: #141418; --surface2: #1a1a20;
+    --border: #2a2a35; --accent: #e8a832; --accent2: #5b8def;
+    --text: #e8e6e0; --muted: #7a7870; --good: #4caf7d; --code-bg: #0a0a0c;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 15px; line-height: 1.7; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(13,13,15,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 2rem; padding: 0 2.5rem; height: 52px; }
+  .nav-brand { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+  .nav-brand span { color: var(--muted); }
+  nav a:not(.nav-brand) { font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  nav a:not(.nav-brand):hover { color: var(--text); }
+  nav a.active { color: var(--text); }
+
+  .page-hero { padding: 5rem 2.5rem 3rem; max-width: 900px; margin: 0 auto; }
+  .context-line { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 300; line-height: 1.1; margin-bottom: 1rem; }
+  h1 em { color: var(--accent); font-style: italic; }
+  .page-desc { color: var(--muted); max-width: 560px; margin-bottom: 2rem; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 2rem 2.5rem 6rem; }
+  .section-block { margin-bottom: 5rem; }
+  .section-header { display: flex; align-items: baseline; gap: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 2.5rem; }
+  .section-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.1em; }
+  h2 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1.5rem; color: var(--text); }
+  h3 { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 14px; color: var(--text); margin-bottom: 0.5rem; }
+
+  /* pseudocode block */
+  .pseudo { background: var(--code-bg); border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 4px; padding: 1.2rem 1.4rem; font-family: 'DM Mono', monospace; font-size: 12px; color: #c8c4bc; line-height: 1.8; margin: 1rem 0 1.5rem; overflow-x: auto; white-space: pre; }
+  .pseudo .kw { color: var(--accent); }
+  .pseudo .fn { color: var(--accent2); }
+  .pseudo .cm { color: var(--muted); font-style: italic; }
+  .pseudo .val { color: var(--good); }
+
+  /* parameter table */
+  .param-table { width: 100%; border-collapse: collapse; margin-top: 1.2rem; font-size: 13px; }
+  .param-table th { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+  .param-table td { padding: 0.8rem 0.8rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; font-size: 12.5px; }
+  .param-table tr:last-child td { border-bottom: none; }
+  .param-table td:first-child { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent2); }
+  .param-table td:nth-child(2) { color: var(--good); }
+  .param-table tr:hover td { background: var(--surface2); }
+
+  /* wbs table */
+  .wbs-table { width: 100%; border-collapse: collapse; margin-top: 1.2rem; font-size: 13px; }
+  .wbs-table th { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+  .wbs-table td { padding: 0.8rem 0.8rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; font-size: 12px; }
+  .wbs-table tr:last-child td { border-bottom: none; }
+  .wbs-table td:first-child { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .wbs-table tr:hover td { background: var(--surface2); }
+
+  /* approach cards */
+  .approach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+  .approach-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.3rem; }
+  .approach-tag { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+  .approach-card h3 { margin-bottom: 0.4rem; }
+  .approach-card p { font-size: 12.5px; color: var(--muted); }
+
+  /* novelty callout */
+  .novelty-box { background: rgba(232,168,50,0.05); border: 1px solid rgba(232,168,50,0.2); border-radius: 6px; padding: 1.4rem 1.6rem; margin-top: 1.5rem; }
+  .novelty-box h3 { color: var(--accent); margin-bottom: 0.6rem; }
+  .novelty-box p { font-size: 13.5px; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--border); padding: 2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; flex-wrap: wrap; gap: 1rem; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  .footer-links { display: flex; gap: 1.5rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span>CV</span> MSDD · Pixel Duo</a>
+  <a href="index.html">Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="methodology.html" class="active">Methodology</a>
+  <a href="results.html">Results</a>
+  <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a>
+</nav>
+
+<div class="page-hero">
+  <div class="context-line">Chapter 3 &amp; 5 · Methodology &amp; Implementation</div>
+  <h1>Methodology <em>Adopted</em></h1>
+  <p class="page-desc">Experimental investigative approach — independent variables are feature extraction configurations and SVM hyperparameters. Dependent variable is macro F1-score on the held-out 120-image validation set.</p>
+</div>
+
+<div class="content">
+
+  <!-- Proposed solution phases -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">3.2</span><h2>Proposed Solution — Five Phases</h2></div>
+    <div class="approach-grid">
+      <div class="approach-card"><div class="approach-tag">Phase 1</div><h3>Standardization Pipeline</h3><p>Grayscale → 128×128 resize → Histogram Equalization. Forces all images to the same intensity manifold regardless of source.</p></div>
+      <div class="approach-card"><div class="approach-tag">Phase 2</div><h3>Dual-Branch Extraction</h3><p>Branch A: Canny + Hough → Hough_Line_Count (scalar). Branch B: LBP → 256-bin normalized histogram.</p></div>
+      <div class="approach-card"><div class="approach-tag">Phase 3</div><h3>PCA Compression</h3><p>PCA exclusively on 256-dim LBP vector, retaining 95% variance (~15 components). Hough scalar preserved intact. Final vector: 16D.</p></div>
+      <div class="approach-card"><div class="approach-tag">Phase 4 &amp; 5</div><h3>CSV Generation + SVM</h3><p>Features written to features.csv. StandardScaler + RBF-SVM (GridSearchCV, 5-fold stratified CV) trained on 541 images.</p></div>
+    </div>
+  </div>
+
+  <!-- Pseudocode: Standardization -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.2.1</span><h2>Pseudocode — Standardization Pipeline</h2></div>
+    <h3>standardize.py</h3>
+    <div class="pseudo"><span class="kw">FUNCTION</span> <span class="fn">standardize</span>(image_path):
+    img     ← cv2.imread(image_path)
+    gray    ← cv2.cvtColor(img, BGR2GRAY)
+    resized ← cv2.resize(gray, (<span class="val">128</span>, <span class="val">128</span>))       <span class="cm"># bilinear interpolation</span>
+    eq      ← cv2.equalizeHist(resized)         <span class="cm"># T(r) = (L−1)·CDF(r), L=256</span>
+    <span class="kw">RETURN</span> eq                                  <span class="cm"># 128×128 domain-normalised image</span></div>
+    <p style="font-size:13px; color:var(--muted);">Histogram Equalization remaps intensities so the output CDF is approximately uniform — compressing dark factory images and bright Google images into the same intensity range as the NEU laboratory images.</p>
+  </div>
+
+  <!-- Pseudocode: Branch A -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.2.2</span><h2>Pseudocode — Branch A · Geometric</h2></div>
+    <h3>branch_a.py — Canny + Hough Transform</h3>
+    <div class="pseudo"><span class="kw">FUNCTION</span> <span class="fn">extract_branch_a</span>(equalized_img):
+    edges ← cv2.Canny(equalized_img, low=<span class="val">60</span>, high=<span class="val">140</span>)
+    lines ← cv2.HoughLinesP(
+                edges,
+                rho=<span class="val">1</span>, theta=π/<span class="val">180</span>,
+                threshold=<span class="val">80</span>,
+                minLineLength=<span class="val">30</span>,
+                maxLineGap=<span class="val">10</span>
+            )
+    <span class="kw">IF</span> lines <span class="kw">is</span> None:
+        hough_count ← <span class="val">0</span>
+    <span class="kw">ELSE</span>:
+        hough_count ← len(lines)               <span class="cm"># scalar integer</span>
+    <span class="kw">RETURN</span> hough_count</div>
+    <p style="font-size:13px; color:var(--muted);">The Probabilistic Hough Transform maps edge points from Cartesian space to polar parameter space (ρ, θ). Only lines above the minimum vote threshold (80) and minimum length (30 px) are counted, suppressing false detections from textured patch surfaces.</p>
+  </div>
+
+  <!-- Pseudocode: Branch B -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.2.3</span><h2>Pseudocode — Branch B · Textural</h2></div>
+    <h3>branch_b.py — Local Binary Patterns</h3>
+    <div class="pseudo"><span class="kw">FUNCTION</span> <span class="fn">extract_branch_b</span>(equalized_img):
+    <span class="cm"># LBP code for pixel (xc, yc):</span>
+    <span class="cm"># LBP(xc,yc) = Σₚ s(Iₚ − Ic) × 2ᵖ   where s(x)=1 if x≥0 else 0</span>
+    lbp_map ← local_binary_pattern(
+                  equalized_img,
+                  P=<span class="val">8</span>, R=<span class="val">1</span>, method=<span class="val">'uniform'</span>   <span class="cm"># 59 uniform patterns</span>
+              )
+    hist ← histogram(lbp_map, bins=<span class="val">256</span>, range=(<span class="val">0</span>, <span class="val">256</span>))
+    hist ← hist / sum(hist)                    <span class="cm"># normalize to unit sum</span>
+    <span class="kw">RETURN</span> hist                                <span class="cm"># 256-dimensional vector</span></div>
+    <p style="font-size:13px; color:var(--muted);">Uniform patterns (at most 2 bitwise transitions in the binary string) account for most naturally occurring textures. There are 59 uniform patterns out of 256 possible LBP codes.</p>
+  </div>
+
+  <!-- Pseudocode: PCA -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.2.4</span><h2>Pseudocode — Selective PCA Compression</h2></div>
+    <h3>PCA applied to Branch B only</h3>
+    <div class="pseudo"><span class="cm"># TRAINING PHASE — fit on training LBP vectors only (no data leakage)</span>
+pca ← PCA(n_components=<span class="val">0.95</span>)             <span class="cm"># retain 95% variance</span>
+pca.fit(X_train_lbp_histograms)             <span class="cm"># k chosen s.t. Σλᵢ/Σλ ≥ 0.95; k≈15</span>
+
+<span class="cm"># FEATURE COMBINATION — at inference time</span>
+<span class="kw">FUNCTION</span> <span class="fn">combine_features</span>(hough_count, lbp_hist):
+    pca_texture    ← pca.transform([lbp_hist])[<span class="val">0</span>]   <span class="cm"># ~15 dims</span>
+    feature_vector ← [hough_count] + list(pca_texture) <span class="cm"># 16 dims total</span>
+    <span class="kw">RETURN</span> feature_vector</div>
+
+    <div class="novelty-box">
+      <h3>Novelty — Why selective PCA?</h3>
+      <p>Applying PCA globally would dilute the Hough line count by mixing it with texture variance. The Hough scalar has direct physical meaning (number of detected linear scratches) and its discriminative power is preserved only if it reaches the SVM in its native integer form. This is an underexplored design pattern in the surface defect detection literature.</p>
+    </div>
+  </div>
+
+  <!-- SVM hyperparameters -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.2.5</span><h2>SVM Hyperparameters</h2></div>
+    <p style="color:var(--muted); margin-bottom:0.5rem;">Optimized via GridSearchCV on 5-fold stratified cross-validation over the training set.</p>
+    <table class="param-table">
+      <thead><tr><th>Hyperparameter</th><th>Value</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>kernel</td><td>rbf</td><td>Handles non-linear separability in the 16-dimensional feature space</td></tr>
+        <tr><td>C</td><td>1.0</td><td>Balances margin maximization and training error — empirically optimal on this dataset</td></tr>
+        <tr><td>gamma</td><td>scale</td><td>Automatically set to 1/(n_features × X.var()) for appropriate RBF bandwidth</td></tr>
+        <tr><td>class_weight</td><td>balanced</td><td>Compensates for residual class imbalance (61 clean images in training set)</td></tr>
+        <tr><td>probability</td><td>True</td><td>Enables predict_proba() for confidence score output in the Streamlit app</td></tr>
+        <tr><td>random_state</td><td>42</td><td>Ensures fully reproducible training runs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- WBS -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">3.3</span><h2>Work Breakdown Structure</h2></div>
+    <table class="wbs-table">
+      <thead><tr><th>Phase</th><th>Task</th><th>Description</th><th>Deliverable</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Data Collection</td><td>Organize NEU dataset into scratch and patch folders; collect real-world supplementary images for domain diversity</td><td>Labeled image folders</td></tr>
+        <tr><td>2</td><td>Standardization Pipeline</td><td>Implement grayscale conversion, 128×128 resize, Histogram Equalization</td><td>standardize.py</td></tr>
+        <tr><td>3</td><td>Branch A — Geometric</td><td>Implement Canny + Hough pipeline to extract Hough_Line_Count per image</td><td>branch_a.py</td></tr>
+        <tr><td>4</td><td>Branch B — Textural</td><td>Implement LBP descriptor and 256-bin histogram extraction</td><td>branch_b.py</td></tr>
+        <tr><td>5</td><td>PCA + SVM Training</td><td>Selective PCA compression, feature vector assembly, SVM training with GridSearchCV</td><td>train_svm.py · .pkl artifacts</td></tr>
+        <tr><td>6</td><td>Streamlit App</td><td>Upload interface with preprocessing visualization and real-time inference on Streamlit Cloud</td><td>app.py</td></tr>
+        <tr><td>7</td><td>Integration &amp; Testing</td><td>End-to-end testing, confusion matrix analysis, deployment validation on Python 3.13</td><td>Test report + requirements.txt</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  <span>© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</span>
+  <div class="footer-links">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="results.html">Results</a>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture · Dual-Branch Defect Classifier · Pixel Duo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f; --surface: #141418; --surface2: #1a1a20;
+    --border: #2a2a35; --accent: #e8a832; --accent2: #5b8def;
+    --text: #e8e6e0; --muted: #7a7870; --good: #4caf7d;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 15px; line-height: 1.7; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(13,13,15,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 2rem; padding: 0 2.5rem; height: 52px; }
+  .nav-brand { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.6rem; }
+  .nav-brand span { color: var(--muted); }
+  nav a:not(.nav-brand) { font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  nav a:not(.nav-brand):hover { color: var(--text); }
+  nav a.active { color: var(--text); }
+
+  .page-hero { padding: 5rem 2.5rem 3rem; max-width: 900px; margin: 0 auto; }
+  .context-line { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 300; line-height: 1.1; margin-bottom: 1rem; }
+  h1 em { color: var(--accent); font-style: italic; }
+  .page-desc { color: var(--muted); max-width: 560px; margin-bottom: 2rem; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 2rem 2.5rem 6rem; }
+  .section-block { margin-bottom: 5rem; }
+  .section-header { display: flex; align-items: baseline; gap: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 2.5rem; }
+  .section-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.1em; }
+  h2 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1.5rem; color: var(--text); }
+
+  /* Pipeline diagram */
+  .pipeline { display: flex; flex-direction: column; gap: 0; margin-top: 1.5rem; }
+  .phase-row { display: grid; grid-template-columns: 110px 1fr; gap: 0; }
+  .phase-label { display: flex; align-items: flex-start; padding: 1.4rem 1rem 1.4rem 0; }
+  .phase-badge { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); border: 1px solid rgba(232,168,50,0.3); border-radius: 2px; padding: 3px 7px; white-space: nowrap; }
+  .phase-body { border-left: 1px solid var(--border); padding: 1.4rem 0 1.4rem 1.6rem; }
+  .phase-title { font-size: 14px; font-weight: 500; margin-bottom: 0.3rem; }
+  .phase-desc { font-size: 13px; color: var(--muted); }
+  .phase-connector { display: flex; align-items: center; padding: 0 0 0 108px; }
+  .connector-line { width: 1px; height: 20px; background: var(--border); margin-left: 0; }
+  .connector-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: -3px; margin-top: 4px; }
+
+  /* Dual branch */
+  .dual-branch { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 6px; overflow: hidden; margin: 1.5rem 0; }
+  .branch-card { background: var(--surface); padding: 1.6rem; }
+  .branch-tag { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .branch-a .branch-tag { color: var(--accent); }
+  .branch-b .branch-tag { color: var(--accent2); }
+  .branch-card h3 { font-size: 15px; font-weight: 500; margin-bottom: 0.6rem; }
+  .branch-card p { font-size: 13px; color: var(--muted); margin-bottom: 0.6rem; }
+  .branch-params { display: flex; flex-direction: column; gap: 4px; margin-top: 0.8rem; }
+  .param-row { display: flex; justify-content: space-between; align-items: center; font-family: 'DM Mono', monospace; font-size: 10.5px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .param-row:last-child { border-bottom: none; }
+  .param-key { color: var(--muted); }
+  .param-val { color: var(--text); }
+
+  /* Component table */
+  .arch-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 13px; }
+  .arch-table th { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); }
+  .arch-table td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+  .arch-table tr:last-child td { border-bottom: none; }
+  .arch-table td:first-child { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); white-space: nowrap; }
+  .arch-table td:nth-child(2) { color: var(--muted); font-size: 12px; }
+  .arch-table tr:hover td { background: var(--surface2); }
+
+  /* Feature vector breakdown */
+  .fv-bar { display: flex; gap: 2px; height: 36px; margin: 1.5rem 0 0.6rem; border-radius: 4px; overflow: hidden; }
+  .fv-seg { display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.7); }
+  .fv-seg.hough { background: rgba(232,168,50,0.5); flex: 1; }
+  .fv-seg.pca { background: rgba(91,141,239,0.5); flex: 15; }
+  .fv-legend { display: flex; gap: 1.5rem; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .fv-legend span { display: flex; align-items: center; gap: 6px; }
+  .fv-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* Standardization flow */
+  .std-flow { display: flex; align-items: center; gap: 0; margin-top: 1.5rem; flex-wrap: wrap; }
+  .std-step { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1rem 1.2rem; text-align: center; min-width: 130px; flex: 1; }
+  .std-step .step-num { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  .std-step h4 { font-size: 13px; font-weight: 500; margin-bottom: 0.2rem; }
+  .std-step p { font-size: 11.5px; color: var(--muted); }
+  .std-arrow { color: var(--border); font-size: 1.2rem; padding: 0 0.4rem; }
+
+  footer { border-top: 1px solid var(--border); padding: 2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; flex-wrap: wrap; gap: 1rem; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  .footer-links { display: flex; gap: 1.5rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span>CV</span> MSDD · Pixel Duo</a>
+  <a href="index.html">Overview</a>
+  <a href="architecture.html" class="active">Architecture</a>
+  <a href="methodology.html">Methodology</a>
+  <a href="results.html">Results</a>
+  <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a>
+</nav>
+
+<div class="page-hero">
+  <div class="context-line">Chapter 4 · Design Specifications</div>
+  <h1>System <em>Architecture</em></h1>
+  <p class="page-desc">A five-phase sequential pipeline with two parallel feature extraction branches — designed to physically separate geometric and textural defect signals before they reach the SVM classifier.</p>
+</div>
+
+<div class="content">
+
+  <!-- High-level pipeline -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">4.1</span><h2>Five-Phase Pipeline</h2></div>
+    <p style="color:var(--muted); margin-bottom:1.5rem;">Every image passes through five sequential phases from raw input to final classification output. The dual-branch split occurs in Phase 2.</p>
+
+    <div class="pipeline">
+      <div class="phase-row">
+        <div class="phase-label"><span class="phase-badge">Phase 1</span></div>
+        <div class="phase-body">
+          <div class="phase-title">Standardization Pipeline</div>
+          <div class="phase-desc">Grayscale conversion → 128×128 resize → Histogram Equalization. Forces all inputs to the same mathematical intensity manifold regardless of source (NEU lab vs. real-world factory/web images).</div>
+        </div>
+      </div>
+      <div class="phase-connector"><div style="width:1px;height:16px;background:var(--border);margin-left:54px;"></div></div>
+      <div class="phase-row">
+        <div class="phase-label"><span class="phase-badge">Phase 2A</span></div>
+        <div class="phase-body">
+          <div class="phase-title">Branch A — Geometric Analysis (Scratch detection)</div>
+          <div class="phase-desc">Canny edge detection (low=50, high=150) → Probabilistic Hough Transform (min_votes=80, min_len=30px, max_gap=10px). Output: one integer — Hough_Line_Count. Scratch images consistently yield count &gt; 5; patch images ≈ 0.</div>
+        </div>
+      </div>
+      <div class="phase-connector"><div style="width:1px;height:16px;background:var(--border);margin-left:54px;"></div></div>
+      <div class="phase-row">
+        <div class="phase-label"><span class="phase-badge">Phase 2B</span></div>
+        <div class="phase-body">
+          <div class="phase-title">Branch B — Textural Analysis (Patch detection)</div>
+          <div class="phase-desc">Local Binary Patterns (P=8 neighbors, R=1, uniform method). For each pixel, a binary code is generated by thresholding circular neighbors against center intensity. Summarized as a 256-bin normalized histogram capturing micro-texture frequency distribution.</div>
+        </div>
+      </div>
+      <div class="phase-connector"><div style="width:1px;height:16px;background:var(--border);margin-left:54px;"></div></div>
+      <div class="phase-row">
+        <div class="phase-label"><span class="phase-badge">Phase 3</span></div>
+        <div class="phase-body">
+          <div class="phase-title">PCA Compression (Texture branch only)</div>
+          <div class="phase-desc">PCA applied <em>exclusively</em> to the 256-dimensional LBP vector, retaining 95% variance in ~15 principal components. The Hough line count is preserved as a native scalar — it is not compressed. Final feature vector: [Hough_Count ‖ PCA_1 … PCA_15] = 16 dimensions.</div>
+        </div>
+      </div>
+      <div class="phase-connector"><div style="width:1px;height:16px;background:var(--border);margin-left:54px;"></div></div>
+      <div class="phase-row">
+        <div class="phase-label"><span class="phase-badge">Phase 4</span></div>
+        <div class="phase-body">
+          <div class="phase-title">CSV Dataset Generation</div>
+          <div class="phase-desc">Each image stored as a row: Hough_Line_Count, PCA_1 … PCA_15, Target_Label (0=Scratch, 1=Patch). Output: features.csv with 541 training rows + 120 validation rows.</div>
+        </div>
+      </div>
+      <div class="phase-connector"><div style="width:1px;height:16px;background:var(--border);margin-left:54px;"></div></div>
+      <div class="phase-row">
+        <div class="phase-label"><span class="phase-badge">Phase 5</span></div>
+        <div class="phase-body">
+          <div class="phase-title">SVM Classification</div>
+          <div class="phase-desc">StandardScaler normalizes the 16-dimensional input. RBF-kernel SVC (C=1.0, gamma='scale', class_weight='balanced', probability=True) classifies the surface. Output: binary label + per-class confidence score.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dual branch detail -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">4.2</span><h2>Dual-Branch Detail</h2></div>
+    <p style="color:var(--muted); margin-bottom:0;">Each branch is independently optimized for its target defect type — the key architectural novelty over monolithic feature concatenation.</p>
+    <div class="dual-branch">
+      <div class="branch-card branch-a">
+        <div class="branch-tag">Branch A · Geometric</div>
+        <h3>Hough Line Count</h3>
+        <p>Targets the linear geometry of scratch defects. Scratch images produce Hough_Line_Count &gt; 5 consistently; smooth or patchy textures return ≈ 0.</p>
+        <div class="branch-params">
+          <div class="param-row"><span class="param-key">Canny low</span><span class="param-val">50</span></div>
+          <div class="param-row"><span class="param-key">Canny high</span><span class="param-val">150</span></div>
+          <div class="param-row"><span class="param-key">HoughLinesP min_votes</span><span class="param-val">80</span></div>
+          <div class="param-row"><span class="param-key">HoughLinesP min_line_len</span><span class="param-val">30 px</span></div>
+          <div class="param-row"><span class="param-key">HoughLinesP max_line_gap</span><span class="param-val">10 px</span></div>
+          <div class="param-row"><span class="param-key">Output dimensionality</span><span class="param-val">1 (scalar integer)</span></div>
+        </div>
+      </div>
+      <div class="branch-card branch-b">
+        <div class="branch-tag">Branch B · Textural</div>
+        <h3>LBP + PCA Histogram</h3>
+        <p>Targets the stochastic micro-texture of patch defects. LBP codes pixels by their local binary neighborhood, summarized as a 256-bin histogram compressed by PCA.</p>
+        <div class="branch-params">
+          <div class="param-row"><span class="param-key">LBP P (neighbors)</span><span class="param-val">8</span></div>
+          <div class="param-row"><span class="param-key">LBP R (radius)</span><span class="param-val">1 px</span></div>
+          <div class="param-row"><span class="param-key">LBP method</span><span class="param-val">uniform</span></div>
+          <div class="param-row"><span class="param-key">Raw histogram bins</span><span class="param-val">256</span></div>
+          <div class="param-row"><span class="param-key">PCA variance target</span><span class="param-val">95%</span></div>
+          <div class="param-row"><span class="param-key">Output dimensionality</span><span class="param-val">~15 components</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature vector -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">4.3</span><h2>16-Dimensional Feature Vector</h2></div>
+    <p style="color:var(--muted); margin-bottom:0.5rem;">The final vector fed to the SVM is a physically motivated combination: one geometric scalar prepended to 15 PCA texture components.</p>
+    <div class="fv-bar">
+      <div class="fv-seg hough">Hough (1)</div>
+      <div class="fv-seg pca">PCA components 1 – 15 (texture)</div>
+    </div>
+    <div class="fv-legend">
+      <span><div class="fv-dot" style="background:rgba(232,168,50,0.6);"></div>Hough_Line_Count — Branch A scalar</span>
+      <span><div class="fv-dot" style="background:rgba(91,141,239,0.6);"></div>PCA_1 … PCA_15 — compressed LBP texture, 95% variance retained</span>
+    </div>
+
+    <table class="arch-table" style="margin-top:2rem;">
+      <thead><tr><th>Descriptor</th><th>Raw Dims</th><th>Final Dims</th><th>Configuration</th></tr></thead>
+      <tbody>
+        <tr><td>Hough Line Count</td><td>1</td><td>1</td><td>Canny (50,150) · HoughLinesP min_votes=80, min_len=30, max_gap=10</td></tr>
+        <tr><td>LBP Histogram (raw)</td><td>256</td><td>—</td><td>P=8, R=1, uniform · 256-bin normalized histogram</td></tr>
+        <tr><td>PCA-compressed LBP</td><td>256</td><td>~15</td><td>PCA fitted on training data only · 95% variance retained</td></tr>
+        <tr><td><strong>Final Feature Vector</strong></td><td>257</td><td><strong>16</strong></td><td>[Hough_Count ‖ PCA_1 … PCA_15] → input to StandardScaler + SVM</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Standardization pipeline -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">4.4</span><h2>Standardization Pipeline (Phase 1 Detail)</h2></div>
+    <p style="color:var(--muted); margin-bottom:1rem;">The three sequential operations resolve the domain gap — the key practical challenge of this system.</p>
+    <div class="std-flow">
+      <div class="std-step">
+        <div class="step-num">Step 1</div>
+        <h4>Grayscale</h4>
+        <p>BGR → GRAY<br/>Y = 0.299R + 0.587G + 0.114B<br/>Strips chromatic info</p>
+      </div>
+      <div class="std-arrow">→</div>
+      <div class="std-step">
+        <div class="step-num">Step 2</div>
+        <h4>Resize</h4>
+        <p>Bilinear interpolation<br/>→ 128 × 128 px<br/>Fixed LBP dimensionality</p>
+      </div>
+      <div class="std-arrow">→</div>
+      <div class="std-step">
+        <div class="step-num">Step 3</div>
+        <h4>Hist. Equalization</h4>
+        <p>cv2.equalizeHist()<br/>T(r) = (L−1)·CDF(r)<br/>Aligns intensity manifolds</p>
+      </div>
+      <div class="std-arrow">→</div>
+      <div class="std-step" style="border-color:rgba(232,168,50,0.3);">
+        <div class="step-num" style="color:var(--good);">Output</div>
+        <h4>Standardized</h4>
+        <p>128×128 grayscale<br/>Equalized histogram<br/>Domain-invariant</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Component table -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">4.5</span><h2>Component Overview</h2></div>
+    <table class="arch-table">
+      <thead><tr><th>Phase</th><th>Module</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td>Phase 1</td><td>standardize.py</td><td>Grayscale conversion, 128×128 resize, Histogram Equalization — domain gap mitigation</td></tr>
+        <tr><td>Phase 2A</td><td>branch_a.py</td><td>Canny edge detection → Hough Transform → Hough_Line_Count scalar</td></tr>
+        <tr><td>Phase 2B</td><td>branch_b.py</td><td>LBP computation → 256-bin normalized histogram extraction</td></tr>
+        <tr><td>Phase 3</td><td>train_svm.py</td><td>PCA compression of LBP branch (95% variance) → feature vector assembly → SVM training with GridSearchCV</td></tr>
+        <tr><td>Phase 4</td><td>extract_features.py</td><td>CSV dataset generation — one row per image: Hough_Count + PCA_1..15 + label</td></tr>
+        <tr><td>Phase 5</td><td>predict.py</td><td>StandardScaler normalize → SVM inference → binary label + confidence scores</td></tr>
+        <tr><td>Deployment</td><td>app.py (Streamlit)</td><td>Upload interface, four-stage preprocessing visualization, real-time classification with confidence bars</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  <span>© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</span>
+  <div class="footer-links">
+    <a href="index.html">Overview</a>
+    <a href="methodology.html">Methodology</a>
+    <a href="results.html">Results</a>
+  </div>
+</footer>
+</body>
+</html>
