@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results · Dual-Branch Defect Classifier · Pixel Duo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f; --surface: #141418; --surface2: #1a1a20;
+    --border: #2a2a35; --accent: #e8a832; --accent2: #5b8def;
+    --text: #e8e6e0; --muted: #7a7870; --good: #4caf7d; --bad: #e05c5c;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 15px; line-height: 1.7; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(13,13,15,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 2rem; padding: 0 2.5rem; height: 52px; }
+  .nav-brand { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+  .nav-brand span { color: var(--muted); }
+  nav a:not(.nav-brand) { font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  nav a:not(.nav-brand):hover { color: var(--text); }
+  nav a.active { color: var(--text); }
+
+  .page-hero { padding: 5rem 2.5rem 3rem; max-width: 900px; margin: 0 auto; }
+  .context-line { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 300; line-height: 1.1; margin-bottom: 1rem; }
+  h1 em { color: var(--accent); font-style: italic; }
+  .page-desc { color: var(--muted); max-width: 560px; margin-bottom: 2rem; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 2rem 2.5rem 6rem; }
+  .section-block { margin-bottom: 5rem; }
+  .section-header { display: flex; align-items: baseline; gap: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 2.5rem; }
+  .section-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.1em; }
+  h2 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1.5rem; color: var(--text); }
+
+  /* dataset table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); }
+  .data-table td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table td:first-child { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent2); }
+  .data-table .total-row td { color: var(--accent); font-weight: 500; background: rgba(232,168,50,0.04); }
+  .data-table tr:hover td { background: var(--surface2); }
+
+  /* stat cards */
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.4rem; text-align: center; }
+  .stat-card .num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 300; color: var(--accent); line-height: 1; margin-bottom: 0.3rem; }
+  .stat-card .lbl { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  /* confusion matrix */
+  .cm-wrap { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; margin-top: 1.5rem; }
+  .cm-grid { display: grid; grid-template-columns: auto 1fr 1fr; gap: 2px; }
+  .cm-header { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; text-align: center; }
+  .cm-cell { padding: 18px 22px; border-radius: 3px; text-align: center; }
+  .cm-cell .cm-num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 300; line-height: 1; }
+  .cm-cell .cm-sub { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
+  .cm-tp { background: rgba(76,175,125,0.15); border: 1px solid rgba(76,175,125,0.3); }
+  .cm-tn { background: rgba(76,175,125,0.15); border: 1px solid rgba(76,175,125,0.3); }
+  .cm-fp { background: rgba(224,92,92,0.08); border: 1px solid rgba(224,92,92,0.15); }
+  .cm-fn { background: rgba(232,168,50,0.08); border: 1px solid rgba(232,168,50,0.15); }
+  .cm-tp .cm-num, .cm-tn .cm-num { color: var(--good); }
+  .cm-fp .cm-num, .cm-fn .cm-num { color: var(--muted); }
+
+  /* classification report */
+  .report-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 1.5rem; }
+  .report-table th { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); text-align: left; }
+  .report-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .report-table tr:last-child td { border-bottom: none; }
+  .report-table td:first-child { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .report-table .macro td { color: var(--accent); background: rgba(232,168,50,0.04); }
+  .report-table tr:hover td { background: var(--surface2); }
+  .score-good { color: var(--good); font-weight: 500; }
+  .score-ok { color: var(--accent); }
+
+  /* challenges */
+  .challenge-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
+  .challenge-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.2rem 1.4rem; display: grid; grid-template-columns: 28px 1fr; gap: 1rem; align-items: start; }
+  .challenge-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); margin-top: 2px; }
+  .challenge-item h3 { font-size: 13.5px; font-weight: 500; margin-bottom: 0.3rem; }
+  .challenge-item p { font-size: 12.5px; color: var(--muted); }
+
+  /* future work */
+  .future-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .future-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1.2rem; }
+  .future-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 0.4rem; }
+  .future-card p { font-size: 12px; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--border); padding: 2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; flex-wrap: wrap; gap: 1rem; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  .footer-links { display: flex; gap: 1.5rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span>CV</span> MSDD · Pixel Duo</a>
+  <a href="index.html">Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="methodology.html">Methodology</a>
+  <a href="results.html" class="active">Results</a>
+  <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a>
+</nav>
+
+<div class="page-hero">
+  <div class="context-line">Chapter 5 · Implementation &amp; Experimental Results</div>
+  <h1>Dataset &amp; <em>Results</em></h1>
+  <p class="page-desc">Trained on 541 images, validated on 120 held-out images (60 scratch, 60 patch). SVM with 16-dimensional dual-branch feature vector achieves ~94% macro F1-score with balanced performance across both classes.</p>
+</div>
+
+<div class="content">
+
+  <!-- Dataset -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.1</span><h2>Dataset Description</h2></div>
+    <p style="color:var(--muted); margin-bottom:1.5rem;">Derived from the NEU Surface Defect Dataset, supplemented with web-sourced images for domain diversity. All images normalized to 128×128 grayscale with Histogram Equalization before any feature is extracted. The validation set is strictly held out — never used during training or PCA fitting.</p>
+
+    <table class="data-table">
+      <thead><tr><th>Split</th><th>Scratch (0)</th><th>Patch (1)</th><th>Clean (−)</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>Training</td><td>240</td><td>240</td><td>61</td><td>541</td></tr>
+        <tr><td>Validation</td><td>60</td><td>60</td><td>0</td><td>120</td></tr>
+        <tr class="total-row"><td>Total</td><td>300</td><td>300</td><td>61</td><td>661</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:13px; color:var(--muted); margin-top:1rem;">The training set is balanced (240 images per defect class). The 61 clean images serve as a negative class during training to prevent the classifier from treating all surfaces as defective. Real-world supplementary images increase domain diversity and test the Histogram Equalization standardization against varying lighting and camera conditions.</p>
+  </div>
+
+  <!-- Accuracy metrics -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.3</span><h2>Performance Results</h2></div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="num">~98.5%</div><div class="lbl">Overall Accuracy</div></div>
+      <div class="stat-card"><div class="num">~0.94</div><div class="lbl">Macro F1-Score</div></div>
+      <div class="stat-card"><div class="num">~0.94</div><div class="lbl">Macro Precision</div></div>
+      <div class="stat-card"><div class="num">~0.94</div><div class="lbl">Macro Recall</div></div>
+      <div class="stat-card"><div class="num">120</div><div class="lbl">Validation Images</div></div>
+    </div>
+
+    <!-- Classification report -->
+    <table class="report-table">
+      <thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Scratch (label 0)</td>
+          <td class="score-good">≈ 0.93</td>
+          <td class="score-good">≈ 0.95</td>
+          <td class="score-good">≈ 0.94</td>
+          <td>60</td>
+        </tr>
+        <tr>
+          <td>Patch (label 1)</td>
+          <td class="score-good">≈ 0.95</td>
+          <td class="score-good">≈ 0.93</td>
+          <td class="score-good">≈ 0.94</td>
+          <td>60</td>
+        </tr>
+        <tr class="macro">
+          <td>Macro Average</td>
+          <td>≈ 0.94</td>
+          <td>≈ 0.94</td>
+          <td>≈ 0.94</td>
+          <td>120</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Confusion matrix -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">5.3</span><h2>Confusion Matrix — Validation Set</h2></div>
+    <div class="cm-wrap">
+      <div>
+        <div class="cm-grid">
+          <div></div>
+          <div class="cm-header">Pred. Scratch</div>
+          <div class="cm-header">Pred. Patch</div>
+          <div class="cm-header" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;">Actual Scratch</div>
+          <div class="cm-cell cm-tn"><div class="cm-num">≈59</div><div class="cm-sub">True Neg.</div></div>
+          <div class="cm-cell cm-fn"><div class="cm-num">≈1</div><div class="cm-sub">False Pos.</div></div>
+          <div class="cm-header" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;">Actual Patch</div>
+          <div class="cm-cell cm-fp"><div class="cm-num">≈0</div><div class="cm-sub">False Neg.</div></div>
+          <div class="cm-cell cm-tp"><div class="cm-num">≈60</div><div class="cm-sub">True Pos.</div></div>
+        </div>
+      </div>
+      <div style="max-width:320px;">
+        <p style="font-size:13px; color:var(--muted); margin-bottom:0.8rem;">The classifier achieves near-perfect separation between scratch and patch classes. The Hough line count alone provides strong discriminative power for scratch detection — scratch images consistently produce count &gt; 5 while patch images return ≈ 0.</p>
+        <p style="font-size:13px; color:var(--muted);">The PCA-compressed LBP features successfully capture the stochastic texture patterns of patch defects. When the SVM decision boundary is projected onto the two most discriminative PCA components, clear cluster separation is visible with a well-defined margin.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Challenges -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">7.1</span><h2>Challenges &amp; Resolutions</h2></div>
+    <div class="challenge-list">
+      <div class="challenge-item">
+        <div class="challenge-num">01</div>
+        <div>
+          <h3>Domain gap between NEU laboratory images and real-world Google images</h3>
+          <p>Developed the Standardization Pipeline with Histogram Equalization to force all images to the same intensity manifold, measured as reduction in intra-class KL divergence across 20 sampled image pairs.</p>
+        </div>
+      </div>
+      <div class="challenge-item">
+        <div class="challenge-num">02</div>
+        <div>
+          <h3>High dimensionality of raw LBP histogram (256 dims) relative to training set size</h3>
+          <p>Applied selective PCA compression to the LBP branch only, retaining 95% variance in ~15 components. PCA fitted on training data only to prevent data leakage from validation.</p>
+        </div>
+      </div>
+      <div class="challenge-item">
+        <div class="challenge-num">03</div>
+        <div>
+          <h3>Hough Transform producing false line detections on textured patch surfaces</h3>
+          <p>Tuned minimum vote threshold to 80 and minimum line length to 30 px to suppress spurious lines from texture noise, validated by examining Hough_Line_Count distributions on held-out validation images.</p>
+        </div>
+      </div>
+      <div class="challenge-item">
+        <div class="challenge-num">04</div>
+        <div>
+          <h3>Streamlit Cloud deployment failure — numpy version incompatibility with Python 3.13</h3>
+          <p>Switched from exact version pinning (<code>numpy==2.4.4</code>) to minimum-version pinning (<code>numpy&gt;=1.26.0</code>) in requirements.txt for compatibility with Streamlit Cloud's managed Python 3.13 environment.</p>
+        </div>
+      </div>
+      <div class="challenge-item">
+        <div class="challenge-num">05</div>
+        <div>
+          <h3>opencv-python causing bootstrap failure on headless server environment</h3>
+          <p>Replaced <code>opencv-python</code> with <code>opencv-python-headless</code> in requirements.txt for server-compatible deployment without a display system.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Future work -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">6.4</span><h2>Future Work</h2></div>
+    <div class="future-grid">
+      <div class="future-card">
+        <h3>Multi-Class Extension</h3>
+        <p>Cover all six NEU defect classes (rolled-in scale, crazing, pitting, inclusion, patches, scratches) by adding branches or multi-class SVM.</p>
+      </div>
+      <div class="future-card">
+        <h3>Real-Time Camera Feed</h3>
+        <p>Integrate OpenCV's VideoCapture for live webcam frames from an overhead industrial camera — inline inspection on rolling mill production lines.</p>
+      </div>
+      <div class="future-card">
+        <h3>Deep Learning Comparison</h3>
+        <p>Controlled comparison of MobileNetV3 or EfficientNet-Lite against the classical pipeline on accuracy, inference latency, and hardware requirements.</p>
+      </div>
+      <div class="future-card">
+        <h3>Severity Quantification</h3>
+        <p>Estimate defect severity using contour area and line density metrics to support graded quality control decisions beyond binary classification.</p>
+      </div>
+      <div class="future-card">
+        <h3>Edge Deployment</h3>
+        <p>Package as a Docker container optimized for Raspberry Pi 5, enabling self-contained installation at inspection stations without a networked server.</p>
+      </div>
+      <div class="future-card">
+        <h3>LBP + HOG Fusion</h3>
+        <p>Extend Branch B with HOG descriptors for gradient-based texture representation, potentially improving discriminative power on low-contrast surfaces.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Relevant subjects -->
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">7.2</span><h2>Interdisciplinary Knowledge Applied</h2></div>
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Application in Project</th></tr></thead>
+      <tbody>
+        <tr><td>Computer Vision</td><td>Core pipeline: Canny edge detection, Hough Transform, LBP, Histogram Equalization, morphological operations</td></tr>
+        <tr><td>Machine Learning</td><td>SVM, PCA, GridSearchCV with 5-fold stratified CV, StandardScaler, precision/recall/F1 evaluation</td></tr>
+        <tr><td>Digital Image Processing</td><td>Spatial filtering, intensity transformations (Histogram Equalization), binary edge maps</td></tr>
+        <tr><td>Linear Algebra</td><td>PCA eigendecomposition, LBP binary coding, feature vector construction, RBF kernel methods</td></tr>
+        <tr><td>Software Engineering</td><td>Modular script architecture (branch_a.py, branch_b.py, train_svm.py, app.py), Streamlit Cloud deployment, requirements.txt management</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  <span>© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</span>
+  <div class="footer-links">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="methodology.html">Methodology</a>
+  </div>
+</footer>
+</body>
+</html>
