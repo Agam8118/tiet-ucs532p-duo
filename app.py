@@ -288,7 +288,7 @@ st.markdown("""
   preprocessing breakdown.</p>
   <div class="stat-row">
     <div class="stat-card"><div class="stat-num">98%</div><div class="stat-lbl">Accuracy</div></div>
-    <div class="stat-card"><div class="stat-num">314</div><div class="stat-lbl">Train samples</div></div>
+    <div class="stat-card"><div class="stat-num">661</div><div class="stat-lbl">Train samples</div></div>
     <div class="stat-card"><div class="stat-num">4D</div><div class="stat-lbl">Feature vector</div></div>
     <div class="stat-card"><div class="stat-num">RBF</div><div class="stat-lbl">SVM kernel</div></div>
   </div>
