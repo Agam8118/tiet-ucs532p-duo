@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dual-Branch Defect Classifier · UCS532P · Pixel Duo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f; --surface: #141418; --surface2: #1a1a20;
+    --border: #2a2a35; --accent: #e8a832; --accent2: #5b8def;
+    --text: #e8e6e0; --muted: #7a7870; --code-bg: #0a0a0c; --good: #4caf7d;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 15px; line-height: 1.7; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(13,13,15,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 2rem; padding: 0 2.5rem; height: 52px; }
+  .nav-brand { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.6rem; }
+  .nav-brand span { color: var(--muted); }
+  nav a:not(.nav-brand) { font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  nav a:not(.nav-brand):hover { color: var(--text); }
+  nav a.active { color: var(--text); }
+
+  .hero { min-height: 82vh; display: flex; flex-direction: column; justify-content: center; padding: 5rem 2.5rem 3rem; max-width: 900px; margin: 0 auto; }
+  .context-line { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 300; line-height: 1.1; color: var(--text); margin-bottom: 1.2rem; }
+  h1 em { color: var(--accent); font-style: italic; }
+  .hero-desc { color: var(--muted); max-width: 540px; font-size: 15px; margin-bottom: 2.5rem; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .pill { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 5px 12px; border-radius: 2px; }
+  .pill.accent { color: var(--accent); border-color: rgba(232,168,50,0.3); background: rgba(232,168,50,0.06); }
+  .pill.good { color: var(--good); border-color: rgba(76,175,125,0.3); background: rgba(76,175,125,0.06); }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 20px; text-decoration: none; border-radius: 3px; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #0d0d0f; }
+  .btn-primary:hover { background: #f0b84a; }
+  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+  .stats-bar { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin: 0; }
+  .stat { padding: 2rem 2.5rem; border-right: 1px solid var(--border); text-align: center; }
+  .stat:last-child { border-right: none; }
+  .stat .num { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--accent); line-height: 1.1; }
+  .stat .lbl { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+  .content { max-width: 860px; margin: 0 auto; padding: 5rem 2.5rem 6rem; }
+  .section-block { margin-bottom: 5rem; }
+  .section-header { display: flex; align-items: baseline; gap: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 2.5rem; }
+  .section-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.1em; }
+  h2 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1.5rem; color: var(--text); }
+
+  .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  .problem-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.3rem; }
+  .problem-card .icon { font-size: 1.4rem; margin-bottom: 0.6rem; }
+  .problem-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 0.4rem; }
+  .problem-card p { font-size: 12.5px; color: var(--muted); }
+
+  .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 1.5rem; }
+  .ps-cell { background: var(--surface); padding: 1.4rem; }
+  .ps-cell .ps-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+  .ps-cell h3 { font-size: 14px; font-weight: 500; margin-bottom: 0.4rem; }
+  .ps-cell p { font-size: 13px; color: var(--muted); }
+
+  .lit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .lit-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1.1rem; }
+  .lit-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 0.4rem; }
+  .lit-card p { font-size: 12px; color: var(--muted); }
+
+  .gap-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+  .gap-card { background: var(--surface); border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 4px; padding: 1.2rem 1.4rem; }
+  .gap-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 0.3rem; }
+  .gap-card p { font-size: 12.5px; color: var(--muted); }
+
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .team-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.4rem; text-align: center; }
+  .team-card .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--accent); }
+  .team-card h3 { font-size: 14px; font-weight: 500; }
+  .team-card p { font-size: 12px; color: var(--muted); margin-top: 0.3rem; }
+  .team-card .roll { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 0.2rem; }
+
+  footer { border-top: 1px solid var(--border); padding: 2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; flex-wrap: wrap; gap: 1rem; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  .footer-links { display: flex; gap: 1.5rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span>CV</span> MSDD · Pixel Duo</a>
+  <a href="index.html" class="active">Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="methodology.html">Methodology</a>
+  <a href="results.html">Results</a>
+  <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">↗ GitHub</a>
+</nav>
+
+<div class="hero">
+  <div class="context-line">UCS532P · Computer Vision · TIET · May 2026</div>
+  <h1>Dual-Branch <em>Defect Classifier</em></h1>
+  <p class="hero-desc">A classical computer vision system for binary classification of structural (Scratch) and textural (Patch) defects on steel surfaces — no deep learning, no GPU. Designed for MSME deployment on commodity CPU hardware.</p>
+  <div class="pill-row">
+    <span class="pill accent">Dual-Branch Architecture</span>
+    <span class="pill accent">No Deep Learning</span>
+    <span class="pill">Canny · Hough · LBP · PCA · SVM</span>
+    <span class="pill">Histogram Equalization</span>
+    <span class="pill good">CPU Inference · 30+ FPS</span>
+    <span class="pill">NEU + Real-World Dataset</span>
+    <span class="pill good">~94% Macro F1</span>
+    <span class="pill">Streamlit Cloud Deployed</span>
+  </div>
+  <div class="hero-cta">
+    <a href="methodology.html" class="btn btn-primary">View Methodology →</a>
+    <a href="https://github.com/Agam8118/tiet-ucs532p-duo" class="btn btn-secondary" target="_blank">↗ Source Code</a>
+    <a href="results.html" class="btn btn-secondary">Dataset &amp; Results</a>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="num">2</div><div class="lbl">Classes (Scratch / Patch)</div></div>
+  <div class="stat"><div class="num">661</div><div class="lbl">Total Dataset Images</div></div>
+  <div class="stat"><div class="num">~94%</div><div class="lbl">Macro F1-Score</div></div>
+  <div class="stat"><div class="num">16D</div><div class="lbl">Feature Vector</div></div>
+  <div class="stat"><div class="num">5</div><div class="lbl">Pipeline Phases</div></div>
+  <div class="stat"><div class="num">0</div><div class="lbl">GPU Required</div></div>
+</div>
+
+<div class="content">
+
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">§1</span><h2>Introduction</h2></div>
+    <p style="margin-bottom:1rem;">Steel surface defects broadly fall into two physical categories. <strong style="color:var(--text);">Scratch defects</strong> are structural, linear anomalies caused by mechanical abrasion during rolling, cutting, or handling — manifesting as bright linear features under directional illumination. <strong style="color:var(--text);">Patch defects</strong> are textural, stochastic anomalies caused by material inclusions, pitting corrosion, or surface oxidation, appearing as irregular dark or bright regions without dominant linear geometry.</p>
+    <p style="margin-bottom:1.5rem; color:var(--muted);">A critical practical challenge is the <em>domain gap</em> between the NEU Surface Defect Dataset (laboratory-controlled images) and real-world factory or web-sourced images. Our Standardization Pipeline using Histogram Equalization resolves this by forcing every image to the same mathematical intensity manifold, regardless of source.</p>
+    <div class="problem-grid">
+      <div class="problem-card"><div class="icon">😴</div><h3>Human Fatigue</h3><p>Inspectors exhibit 15–25% miss rates during the final hours of an eight-hour shift — systematic errors compound over time.</p></div>
+      <div class="problem-card"><div class="icon">⚖️</div><h3>Inconsistent Detection</h3><p>Subjective judgements vary between inspectors and shifts, making quality decisions non-reproducible and legally indefensible.</p></div>
+      <div class="problem-card"><div class="icon">💸</div><h3>Late-Stage Rejections</h3><p>Defects found at assembly or shipping cause expensive rework, scrap losses, and potential warranty claims for MSME workshops.</p></div>
+      <div class="problem-card"><div class="icon">🏭</div><h3>MSME Constraints</h3><p>Small workshops in Punjab, Haryana, and Rajasthan cannot afford dedicated AOI systems — the solution must run on standard CPUs.</p></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">§2</span><h2>Problem Statement &amp; Scope</h2></div>
+    <p style="color:var(--muted); margin-bottom:1rem;">Steel surface images from different sources have inconsistent lighting, resolutions, and noise levels. Classical models trained on one domain frequently fail on the other. This project develops a <strong style="color:var(--text);">domain-robust, dual-branch classical CV binary classifier</strong> suitable for MSME environments.</p>
+    <div class="ps-grid">
+      <div class="ps-cell"><div class="ps-label">IN — Input</div><h3>Standard RGB Images</h3><p>Steel surface images of arbitrary resolution from any camera. No specialized imaging hardware required.</p></div>
+      <div class="ps-cell"><div class="ps-label">OUT — Output</div><h3>Binary Classification</h3><p><code>Scratch</code> (label 0) or <code>Patch</code> (label 1) — with per-class confidence scores via Streamlit interface.</p></div>
+      <div class="ps-cell"><div class="ps-label">CON — Constraints</div><h3>Classical CV Only</h3><p>No deep learning. CPU-based inference at 30+ FPS. Requires only ~500 labeled samples to generalize reliably.</p></div>
+      <div class="ps-cell"><div class="ps-label">TGT — Target Users</div><h3>MSME Workshops</h3><p>Metal workshops in Punjab, Haryana, Rajasthan producing steel components for automotive and agricultural markets.</p></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">§3</span><h2>Research Gaps Addressed</h2></div>
+    <p style="color:var(--muted); margin-bottom:1rem;">Three significant gaps in the existing literature motivated the key design decisions in this project.</p>
+    <div class="gap-grid">
+      <div class="gap-card"><h3>Gap 1 — Domain Gap in Surface Defect Datasets</h3><p>Most published systems are trained and evaluated on a single controlled dataset such as NEU or DAGM. When applied to images from different lighting or cameras, performance degrades significantly. Classical CV approaches have not systematically addressed this [He et al., 2019].</p></div>
+      <div class="gap-card"><h3>Gap 2 — Monolithic Feature Vectors for Structurally Distinct Defects</h3><p>Existing handcrafted approaches concatenate all feature types into a single vector. The deliberate architectural separation of geometric and textural branches to match the physical nature of different defect types has not been widely studied [Xie, 2008].</p></div>
+      <div class="gap-card"><h3>Gap 3 — Selective PCA on Texture Branch Only</h3><p>Most works apply PCA globally. The Hough line count is a scalar with direct physical interpretation — compressing it with PCA alongside texture features would corrupt its geometric meaning. Selective PCA on the LBP branch alone is an underexplored design pattern [Ojala et al., 2002].</p></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">§4</span><h2>Literature Review</h2></div>
+    <p style="color:var(--muted); margin-bottom:0.8rem;">Key papers reviewed during development. Gap identified: limited work targets affordable, explainable, lightweight screening systems for small-scale metal manufacturing with cross-domain robustness.</p>
+    <div class="lit-grid">
+      <div class="lit-card"><h3>LBP (Ojala et al., 2002)</h3><p>Uniform LBP provides compact, rotation-invariant texture descriptors — the basis of Branch B micro-texture analysis.</p></div>
+      <div class="lit-card"><h3>SVM (Cortes &amp; Vapnik, 1995)</h3><p>Maximum-margin classifier — well-established for high-confidence binary decisions on compact, well-engineered feature vectors.</p></div>
+      <div class="lit-card"><h3>Canny (Canny, 1986)</h3><p>Optimal multi-stage edge detector with thin, connected edges — forms the input to the Hough Transform in Branch A.</p></div>
+      <div class="lit-card"><h3>Hough Transform (Duda &amp; Hart, 1972)</h3><p>Voting-based line detection in polar parameter space — provides the scalar geometric feature for linear scratch detection.</p></div>
+      <div class="lit-card"><h3>Surface Defect Survey (Xie, 2008)</h3><p>Texture-based methods remain competitive on structured industrial datasets; motivates our LBP-PCA-SVM pipeline design.</p></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header"><span class="section-num">§5</span><h2>Team</h2></div>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="avatar">A</div>
+        <h3>Agampreet Singh</h3>
+        <div class="roll">102323003</div>
+        <p style="margin-top:0.5rem;font-size:11px;color:var(--muted);">Branch A · Canny + Hough pipeline, Streamlit deployment, Streamlit Cloud debugging</p>
+      </div>
+      <div class="team-card">
+        <div class="avatar">V</div>
+        <h3>Vansh Chambyal</h3>
+        <div class="roll">102323005</div>
+        <p style="margin-top:0.5rem;font-size:11px;color:var(--muted);">Branch B · LBP descriptor, PCA compression, SVM training with GridSearchCV, evaluation</p>
+      </div>
+      <div class="team-card">
+        <div class="avatar">R</div>
+        <h3>Dr. Raghav B. Venkataramaiyer</h3>
+        <p>Instructor · UCS532P · TIET</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:0.3rem;">Dept. of Mechanical Engineering</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>© 2026 Pixel Duo · <a href="https://github.com/Agam8118/tiet-ucs532p-duo" target="_blank">GitHub ↗</a> · UCS532P Computer Vision · TIET</span>
+  <div class="footer-links">
+    <a href="architecture.html">Architecture</a>
+    <a href="methodology.html">Methodology</a>
+    <a href="results.html">Results</a>
+  </div>
+</footer>
+</body>
+</html>
